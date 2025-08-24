@@ -1,4 +1,4 @@
-package com.womensafety.alertsystem.service; // Service classes for business logic
+package com.womensafety.alertsystem.service;
 
 import com.womensafety.alertsystem.model.Alert;
 import com.womensafety.alertsystem.model.User;

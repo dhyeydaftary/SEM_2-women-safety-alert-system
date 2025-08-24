@@ -1,3 +1,52 @@
+/*
+  WOMEN'S SAFETY ALERT SYSTEM - MAIN APPLICATION
+  
+  This application implements a comprehensive safety alert system with role-based access control,
+  real-time alert management, and geolocation-based responder assignment.
+  
+  JAVA CONCEPTS USED:
+  - Object-Oriented Programming (OOP): Classes, Objects, Inheritance, Polymorphism, Encapsulation, Abstraction
+  - Exception Handling: Comprehensive try-catch blocks and custom exception handling
+  - Multithreading: AlertLoopThread and ResponderStatusChecker for background processing
+  - Collections Framework: HashMap for alert tracking, Lists for data management
+  - Input/Output: Scanner for user input, System.out for console output
+  - Regular Expressions: Pattern matching for data validation (email, phone, zone)
+  - JDBC: Database connectivity and operations
+  - Packages and Modular Structure: Organized code structure with multiple packages
+  
+  DATA STRUCTURE CONCEPTS USED:
+  - HashMap: Efficient O(1) lookup for alerts by user ID (alertMap)
+  - Arrays: Coordinate handling and zone-based location management
+  - Custom Data Structures: Alert, User, Responder, Admin classes with proper encapsulation
+  - Collections: Management of users, responders, and alerts in various managers
+  - Queue Concepts: Alert processing queue in Dispatcher service
+  
+  DBMS CONCEPTS USED:
+  - MySQL Database: Relational database management system
+  - SQL Queries: Complex SELECT, INSERT, UPDATE operations with joins
+  - Prepared Statements: Parameterized queries for security and performance
+  - Database Transactions: Multiple related operations in single transactions
+  - Table Relationships: Foreign key relationships between users, responders, alerts
+  - Database Schema: Multiple tables (user_details, responder_details, admin_details, alert_details, 
+    dispatches, alert_status_history, user_update_logs, responder_update_logs) with proper normalization
+  - Connection Pooling: Database connection management
+  
+  SECURITY FEATURES:
+  - Role-Based Access Control (RBAC): User, Responder, Admin roles with specific permissions
+  - Input Validation: Comprehensive validation for all user inputs
+  - Password Hashing: Secure password storage and authentication
+  - SQL Injection Prevention: Prepared statements for all database operations
+  
+  SYSTEM ARCHITECTURE:
+  - MVC-like pattern with separation of concerns
+  - Service layer for business logic
+  - Manager classes for entity management
+  - Utility classes for common functionality
+  - Thread-based background processing for real-time features
+  
+ */
+
+ 
 // Main class for the Women's Safety Alert System application
 package com.womensafety.alertsystem.main;
 
