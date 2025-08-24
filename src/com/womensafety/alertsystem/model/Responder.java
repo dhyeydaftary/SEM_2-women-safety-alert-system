@@ -35,6 +35,20 @@ public class Responder extends Person{
         this.available=Available; // Set availability status
     }
 
+    // Sets the responder's availability status
+    public void setAvailable(boolean available){
+        this.available=available;
+    }
+    // Sets the responder's X coordinate
+    public void setX(double x){
+        this.x=x;
+    }
+    // Sets the responder's Y coordinate
+    public void setY(double y){
+        this.y=y;
+    }
+
+
     // Gets the responder's ID
     public int getId(){
         return id;
@@ -52,20 +66,6 @@ public class Responder extends Person{
         return y;
     }
 
-    
-    // Sets the responder's availability status
-    public void setAvailable(boolean available){
-        this.available=available;
-    }
-    // Sets the responder's X coordinate
-    public void setX(double x){
-        this.x=x;
-    }
-    // Sets the responder's Y coordinate
-    public void setY(double y){
-        this.y=y;
-    }
-
     // Returns a string representation of the responder
     @Override
     public String toString() {
@@ -78,7 +78,6 @@ public class Responder extends Person{
                 "\nLocation: " + Constants.COORDINATES + "(" +
                 String.format("%.4f", x) + ", " +
                 String.format("%.4f", y) + ")" + Constants.RESET;
-
     }
 
     // Notifies the user when an alert is assigned to the responder

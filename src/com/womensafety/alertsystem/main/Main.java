@@ -1,4 +1,5 @@
 /*
+
   WOMEN'S SAFETY ALERT SYSTEM - MAIN APPLICATION
   
   This application implements a comprehensive safety alert system with role-based access control,

@@ -184,6 +184,17 @@ public class Alert {
         }
     }
 
+    // Sets the alert status
+    public void setStatus(String status){
+        this.status = status;
+    }
+    
+    // Sets the assigned responder
+    public void setResponder(Responder responder){
+        this.assignedResponder = responder;
+    }
+
+    
     // Gets the alert ID
     int getId(){
         return alertId;
@@ -211,17 +222,6 @@ public class Alert {
     // Gets the assigned responder
     public Responder getAssignedResponder(){
         return assignedResponder;
-    }
-
-
-    // Sets the alert status
-    public void setStatus(String status){
-        this.status = status;
-    }
-    
-    // Sets the assigned responder
-    public void setResponder(Responder responder){
-        this.assignedResponder = responder;
     }
 
     // Returns string representation of the alert

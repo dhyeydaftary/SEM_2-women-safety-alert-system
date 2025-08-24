@@ -36,6 +36,20 @@ public class User extends Person{
             throw new IllegalArgumentException("Password must be at least 6 characters long.");
     }
 
+    // Sets the user's location description
+    public void setLocation(String location){
+        this.location=location;
+    }
+    // Sets the user's X coordinate
+    public void setX(double x){
+        this.x=x;
+    }
+    // Sets the user's Y coordinate
+    public void setY(double y){
+        this.y=y;
+    }
+
+    
     // Gets the user's ID
     public int getId(){
         return id;
@@ -51,20 +65,6 @@ public class User extends Person{
     // Gets the user's Y coordinate
     public double getY(){
         return y;
-    }
-
-
-    // Sets the user's location description
-    public void setLocation(String location){
-        this.location=location;
-    }
-    // Sets the user's X coordinate
-    public void setX(double x){
-        this.x=x;
-    }
-    // Sets the user's Y coordinate
-    public void setY(double y){
-        this.y=y;
     }
 
     // Returns a string representation of the user

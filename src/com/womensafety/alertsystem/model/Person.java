@@ -29,6 +29,32 @@ public class Person{
         this.password=password;
     }
 
+    // Sets the person's name
+    public void setName(String name){ 
+        this.name=name; 
+    }
+    // Sets the person's phone number
+    public void setPhone(String phone){ 
+        this.phone=phone; 
+    }
+    // Sets the person's email address
+    public void setEmail(String email){ 
+        this.email=email; 
+    }
+    // Sets the person's geographic zone
+    public void setZone(String zone){ 
+        this.zone=zone; 
+    }
+    // Sets the person's password
+    public void setPassword(String password){ 
+        this.password=password; 
+    }
+    // Sets the person's role
+    public void setRole(Role role) { 
+        this.role = role; 
+    }
+
+
     // Gets the person's ID
     public int getId() { 
         return id; 
@@ -56,31 +82,5 @@ public class Person{
     // Gets the person's role
     public Role getRole() { 
         return role; 
-    }
-
-
-    // Sets the person's name
-    public void setName(String name){ 
-        this.name=name; 
-    }
-    // Sets the person's phone number
-    public void setPhone(String phone){ 
-        this.phone=phone; 
-    }
-    // Sets the person's email address
-    public void setEmail(String email){ 
-        this.email=email; 
-    }
-    // Sets the person's geographic zone
-    public void setZone(String zone){ 
-        this.zone=zone; 
-    }
-    // Sets the person's password
-    public void setPassword(String password){ 
-        this.password=password; 
-    }
-    // Sets the person's role
-    public void setRole(Role role) { 
-        this.role = role; 
     }
 }
