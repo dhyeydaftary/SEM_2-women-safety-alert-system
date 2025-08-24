@@ -1,4 +1,4 @@
-package com.womensafety.alertsystem.service;
+package com.womensafety.alertsystem.service; // Service classes for business logic
 
 import com.womensafety.alertsystem.model.Alert;
 import com.womensafety.alertsystem.model.User;
@@ -13,22 +13,27 @@ import java.sql.*;
 import java.util.*;
 import java.time.format.DateTimeFormatter;
 
+// Dispatcher service handles alert processing, responder assignment, and database operations
+// Manages alert queue and coordinates between users and responders
 public class Dispatcher{
-    private Queue<Alert> alertQueue;
-    private LocationManager locationManager;
-    private EscalationLogger escalationLogger;
-    private UserManager userManager;
-    private ResponderManager responderManager;
+    private Queue<Alert> alertQueue; // Queue for pending alerts
+    private LocationManager locationManager; // Manager for location-based operations
+    private EscalationLogger escalationLogger; // Logger for escalation events
+    private UserManager userManager; // Manager for user operations
+    private ResponderManager responderManager; // Manager for responder operations
 
+    // Constructor initializes dispatcher with required managers
     public Dispatcher(LocationManager locationManager, UserManager userManager, ResponderManager responderManager){
         this.alertQueue = new LinkedList<>();
         this.locationManager = locationManager;
         this.escalationLogger = new EscalationLogger();
         this.userManager = userManager;
         this.responderManager = responderManager;
-        loadPendingAlertsFromDatabase();
+        loadPendingAlertsFromDatabase(); // Load existing pending alerts on initialization
     }
 
+    // Loads pending alerts (ACTIVE and WAITING status) from database into memory queue
+    // Query: Retrieves alert details with user and responder information for pending alerts
     private void loadPendingAlertsFromDatabase() {
         try {
             String dburl = "jdbc:mysql://localhost:3306/WomenSafetyDB";
@@ -37,6 +42,7 @@ public class Dispatcher{
             
             Connection con = DriverManager.getConnection(dburl, dbuser, dbpass);
             
+            // Query: Join alert_details with user_details and responder_details to get complete alert information
             String query = "SELECT a.*, u.Name as user_name, u.Phone_no as user_phone, u.Email as user_email, " +
                 "u.Location as user_location, u.Zone as user_zone, u.Password as user_password,u.X_coordinate as user_x,"+
                 " u.Y_coordinate as user_y,r.Name as resp_name, r.Phone_no as resp_phone, r.Email as resp_email, " +
@@ -45,8 +51,8 @@ public class Dispatcher{
                 "FROM alert_details a " +
                 "JOIN user_details u ON a.User_id = u.User_id " +
                 "LEFT JOIN responder_details r ON a.Responder_id = r.Responder_id " +
-                "WHERE a.Status IN (?, ?) " +
-                "ORDER BY a.Alert_time ASC";
+                "WHERE a.Status IN (?, ?) " + // Filter for ACTIVE and WAITING status alerts
+                "ORDER BY a.Alert_time ASC"; // Process oldest alerts first
             
             PreparedStatement pst = con.prepareStatement(query);
             pst.setString(1, Constants.STATUS_ACTIVE);
@@ -104,6 +110,7 @@ public class Dispatcher{
         }
     }
 
+    // Adds a new alert to the system and database
     public void addAlert(Alert alert){
         if (alert.saveToDatabase()) {
             alertQueue.add(alert);
@@ -113,6 +120,7 @@ public class Dispatcher{
         }
     }
 
+    // Processes the next alert in the queue, attempting to assign a responder
     public void processNextAlert(){
         if(alertQueue.isEmpty()){
             SystemLogger.info("[INFO] No pending alerts to process.");
@@ -141,6 +149,7 @@ public class Dispatcher{
                 
                 Connection conn = DriverManager.getConnection(dburl, dbuser, dbpass);
                 
+                // Query: Create dispatch record tracking responder assignment and distance
                 String dispatchSQL = "INSERT INTO dispatches (Alert_id, Responder_id, Distance_km) VALUES (?, ?, ?)";
                 try (PreparedStatement pstmt = conn.prepareStatement(dispatchSQL)) {
                     pstmt.setInt(1, alert.getAlertId());
@@ -150,6 +159,7 @@ public class Dispatcher{
                     SystemLogger.info("Dispatch record created for Alert ID: " + alert.getAlertId());
                 }
 
+                // Query: Update alert status to ASSIGNED and set responder ID
                 String updateAlertSQL = "UPDATE alert_details SET Status = ?, Responder_id = ? WHERE Alert_id = ?";
                 try (PreparedStatement pstmt = conn.prepareStatement(updateAlertSQL)) {
                     pstmt.setString(1, Constants.STATUS_ASSIGNED);
@@ -159,6 +169,7 @@ public class Dispatcher{
                     SystemLogger.info("Alert status updated to ASSIGNED for Alert ID: " + alert.getAlertId());
                 }
 
+                // Query: Record status change history for audit trail
                 String historySQL = "INSERT INTO alert_status_history (Alert_id, Previous_status, Current_status, Responder_id) VALUES (?, ?, ?, ?)";
                 try (PreparedStatement pstmt = conn.prepareStatement(historySQL)) {
                     pstmt.setInt(1, alert.getAlertId());
@@ -169,6 +180,7 @@ public class Dispatcher{
                     SystemLogger.info("Status history recorded: Active -> Assigned for Alert ID: " + alert.getAlertId());
                 }
                 
+                // Query: Update responder availability to false (busy)
                 String updateResponderSQL = "UPDATE responder_details SET Availability = ? WHERE Responder_id = ?";
                 try (PreparedStatement pstmt = conn.prepareStatement(updateResponderSQL)) {
                     pstmt.setBoolean(1, false);
@@ -205,6 +217,7 @@ public class Dispatcher{
                 
                 Connection conn = DriverManager.getConnection(dburl, dbuser, dbpass);
                 
+                // Query: Update alert status to WAITING when no responder available
                 String updateAlertSQL = "UPDATE alert_details SET Status = ? WHERE Alert_id = ?";
                 try (PreparedStatement pstmt = conn.prepareStatement(updateAlertSQL)) {
                     pstmt.setString(1, Constants.STATUS_WAITING);
@@ -212,6 +225,7 @@ public class Dispatcher{
                     pstmt.executeUpdate();
                 }
                 
+                // Query: Record status change to WAITING in history
                 String historySQL = "INSERT INTO alert_status_history (Alert_id, Previous_status, Current_status, Responder_id) VALUES (?, ?, ?, NULL)";
                 try (PreparedStatement pstmt = conn.prepareStatement(historySQL)) {
                     pstmt.setInt(1, alert.getAlertId());
@@ -229,6 +243,8 @@ public class Dispatcher{
         }
     }
 
+    // Finds an available responder in the specified zone from database
+    // Query: Selects random available responder in the specified zone
     private Responder findAvailableResponderFromDatabase(String zone) {
         try {
             String dburl = "jdbc:mysql://localhost:3306/WomenSafetyDB";
@@ -236,6 +252,7 @@ public class Dispatcher{
             String dbpass = "";
             Connection con = DriverManager.getConnection(dburl, dbuser, dbpass);
             
+            // Query: Find available responder in specified zone, ordered randomly for load balancing
             String query = "SELECT * FROM responder_details WHERE Zone = ? AND Availability = true ORDER BY RAND() LIMIT 1";
             PreparedStatement pst = con.prepareStatement(query);
             pst.setString(1, zone);
@@ -271,13 +288,13 @@ public class Dispatcher{
             pst.close();
             con.close();
         } catch (Exception e) {
-            SystemLogger.error("Error finding available responder from database: " + e.getMessage());
+            SystemLogger.error("Error finding available responder from database: "+ e.getMessage());
         }
         
         return null;
     }
 
-
+    // Displays all pending alerts with detailed information
     public void showPendingAlerts(){
         loadPendingAlertsForDisplay();
         
@@ -311,27 +328,29 @@ public class Dispatcher{
         System.out.println("=" .repeat(80));
     }
 
+    // Reloads pending alerts from database for display purposes
     private void loadPendingAlertsForDisplay() {
         alertQueue.clear();
         loadPendingAlertsFromDatabase();
     }
 
-        private String getStatusWithColor(String status) {
-    switch (status) {
-        case Constants.STATUS_ACTIVE:
-            return Constants.MAGENTA_ITALIC_BOLD + status + Constants.RESET;
-        case Constants.STATUS_ASSIGNED:
-            return Constants.SUCCESS + status + Constants.RESET;
-        case Constants.STATUS_WAITING:
-            return Constants.WARNING + status + Constants.RESET;
-        case Constants.STATUS_RESOLVED:
-            return Constants.SUCCESS + status + Constants.RESET;
-        default:
-            return status;
+    // Returns status string with appropriate color formatting
+    private String getStatusWithColor(String status) {
+        switch (status) {
+            case Constants.STATUS_ACTIVE:
+                return Constants.MAGENTA_ITALIC_BOLD + status + Constants.RESET;
+            case Constants.STATUS_ASSIGNED:
+                return Constants.SUCCESS + status + Constants.RESET;
+            case Constants.STATUS_WAITING:
+                return Constants.WARNING + status + Constants.RESET;
+            case Constants.STATUS_RESOLVED:
+                return Constants.SUCCESS + status + Constants.RESET;
+            default:
+                return status;
+        }
     }
-}
 
-
+    // Processes all pending alerts in the queue
     public void processAllPendingAlerts() {
         if(alertQueue.isEmpty()){
             SystemLogger.info("No pending alerts to process.");
@@ -383,6 +402,8 @@ public class Dispatcher{
         }
     }
 
+    // Updates database records for alert assignment
+    // Queries: Update alert status, record history, and update responder availability
     private void updateAssignmentInDatabase(Alert alert, Responder responder) {
         try {
             String dburl = "jdbc:mysql://localhost:3306/WomenSafetyDB";
@@ -390,7 +411,7 @@ public class Dispatcher{
             String dbpass = "";
             Connection con = DriverManager.getConnection(dburl, dbuser, dbpass);
             
-            // Update alert status and assign responder
+            // Query: Update alert status and assign responder
             String updateAlertSQL = "UPDATE alert_details SET Status = ?, Responder_id = ? WHERE Alert_id = ?";
             try (PreparedStatement pst = con.prepareStatement(updateAlertSQL)) {
                 pst.setString(1, Constants.STATUS_ASSIGNED);
@@ -399,7 +420,7 @@ public class Dispatcher{
                 pst.executeUpdate();
             }
             
-            // Log status change
+            // Query: Log status change history
             String historySQL = "INSERT INTO alert_status_history (Alert_id, Previous_status, Current_status, Responder_id) VALUES (?, ?, ?, ?)";
             try (PreparedStatement pst = con.prepareStatement(historySQL)) {
                 pst.setInt(1, alert.getAlertId());
@@ -409,7 +430,7 @@ public class Dispatcher{
                 pst.executeUpdate();
             }
             
-            // Update responder availability
+            // Query: Update responder availability to false
             String updateResponderSQL = "UPDATE responder_details SET Availability = ? WHERE Responder_id = ?";
             try (PreparedStatement pst = con.prepareStatement(updateResponderSQL)) {
                 pst.setBoolean(1, false);
@@ -424,6 +445,8 @@ public class Dispatcher{
         }
     }
 
+    // Updates database for alerts that need to wait for responders
+    // Queries: Update alert status and record waiting status history
     private void updateWaitingStatusInDatabase(Alert alert) {
         try {
             String dburl = "jdbc:mysql://localhost:3306/WomenSafetyDB";
@@ -431,7 +454,7 @@ public class Dispatcher{
             String dbpass = "";
             Connection con = DriverManager.getConnection(dburl, dbuser, dbpass);
             
-            // Update alert status to waiting
+            // Query: Update alert status to WAITING
             String updateAlertSQL = "UPDATE alert_details SET Status = ? WHERE Alert_id = ?";
             try (PreparedStatement pst = con.prepareStatement(updateAlertSQL)) {
                 pst.setString(1, Constants.STATUS_WAITING);
@@ -439,7 +462,7 @@ public class Dispatcher{
                 pst.executeUpdate();
             }
             
-            // Log status change
+            // Query: Record status change to WAITING in history
             String historySQL = "INSERT INTO alert_status_history (Alert_id, Previous_status, Current_status, Responder_id) VALUES (?, ?, ?, NULL)";
             try (PreparedStatement pst = con.prepareStatement(historySQL)) {
                 pst.setInt(1, alert.getAlertId());
@@ -455,6 +478,8 @@ public class Dispatcher{
         }
     }
 
+    // Completes an alert by marking it as resolved and freeing up the responder
+    // Queries: Update dispatch completion, alert status, history, and responder availability
     public void completeAlert(Alert alert){
         Responder responder = alert.getResponder();
         if(responder != null){
@@ -465,6 +490,7 @@ public class Dispatcher{
                 
                 Connection con = DriverManager.getConnection(dburl, dbuser, dbpass);
                 
+                // Query: Record dispatch completion time
                 String updateDispatchSQL = "UPDATE dispatches SET Completion_time = CURRENT_TIMESTAMP WHERE Alert_id = ? AND Responder_id = ?";
                 try (PreparedStatement pst = con.prepareStatement(updateDispatchSQL)) {
                     pst.setInt(1, alert.getAlertId());
@@ -473,6 +499,7 @@ public class Dispatcher{
                     SystemLogger.info("Dispatch completed for Alert ID: " + alert.getAlertId());
                 }
                 
+                // Query: Update alert status to RESOLVED
                 String updateAlertSQL = "UPDATE alert_details SET Status = ? WHERE Alert_id = ?";
                 try (PreparedStatement pst = con.prepareStatement(updateAlertSQL)) {
                     pst.setString(1, Constants.STATUS_RESOLVED);
@@ -480,6 +507,7 @@ public class Dispatcher{
                     pst.executeUpdate();
                 }
                 
+                // Query: Record status change to RESOLVED in history
                 String historySQL = "INSERT INTO alert_status_history (Alert_id, Previous_status, Current_status, Responder_id) VALUES (?, ?, ?, ?)";
                 try (PreparedStatement pst = con.prepareStatement(historySQL)) {
                     pst.setInt(1, alert.getAlertId());
@@ -489,6 +517,7 @@ public class Dispatcher{
                     pst.executeUpdate();
                 }
 
+                // Query: Update responder availability to true (available)
                 String updateResponderSQL = "UPDATE responder_details SET Availability = ? WHERE Responder_id = ?";
                 try (PreparedStatement pst = con.prepareStatement(updateResponderSQL)) {
                     pst.setBoolean(1, true);
@@ -519,6 +548,8 @@ public class Dispatcher{
         }
     }
 
+    // Marks an alert as complete with validation checks
+    // Queries: Verify assignment, update status, record completion, and free responder
     public boolean markAlertComplete(int alertId, int responderId) {
         try {
             String dburl = "jdbc:mysql://localhost:3306/WomenSafetyDB";
@@ -527,6 +558,7 @@ public class Dispatcher{
             
             Connection con = DriverManager.getConnection(dburl, dbuser, dbpass);
             
+            // Query: Verify alert is assigned to this responder and in ASSIGNED status
             String verifySQL = "SELECT Status FROM alert_details WHERE Alert_id = ? AND Responder_id = ?";
             try (PreparedStatement pst = con.prepareStatement(verifySQL)) {
                 pst.setInt(1, alertId);
@@ -547,6 +579,7 @@ public class Dispatcher{
                 }
             }
             
+            // Query: Update alert status to RESOLVED
             String updateAlertSQL = "UPDATE alert_details SET Status = ? WHERE Alert_id = ?";
             try (PreparedStatement pst = con.prepareStatement(updateAlertSQL)) {
                 pst.setString(1, Constants.STATUS_RESOLVED);
@@ -554,6 +587,7 @@ public class Dispatcher{
                 pst.executeUpdate();
             }
             
+            // Query: Record dispatch completion time
             String updateDispatchSQL = "UPDATE dispatches SET Completion_time = CURRENT_TIMESTAMP WHERE Alert_id = ? AND Responder_id = ?";
             try (PreparedStatement pst = con.prepareStatement(updateDispatchSQL)) {
                 pst.setInt(1, alertId);
@@ -561,6 +595,7 @@ public class Dispatcher{
                 pst.executeUpdate();
             }
             
+            // Query: Record status change to RESOLVED in history
             String historySQL = "INSERT INTO alert_status_history (Alert_id, Previous_status, Current_status, Responder_id) VALUES (?, ?, ?, ?)";
             try (PreparedStatement pst = con.prepareStatement(historySQL)) {
                 pst.setInt(1, alertId);
@@ -570,6 +605,7 @@ public class Dispatcher{
                 pst.executeUpdate();
             }
             
+            // Query: Update responder availability to true
             String updateResponderSQL = "UPDATE responder_details SET Availability = ? WHERE Responder_id = ?";
             try (PreparedStatement pst = con.prepareStatement(updateResponderSQL)) {
                 pst.setBoolean(1, true);
@@ -588,6 +624,8 @@ public class Dispatcher{
         }
     }
 
+    // Updates responder availability in database
+    // Query: Update availability status for a specific responder
     private void updateResponderAvailabilityInDatabase(int responderId, boolean available) {
         try {
             String dburl = "jdbc:mysql://localhost:3306/WomenSafetyDB";
@@ -596,6 +634,7 @@ public class Dispatcher{
             
             Connection con = DriverManager.getConnection(dburl, dbuser, dbpass);
             
+            // Query: Update responder availability status
             String updateQuery = "UPDATE responder_details SET Availability = ? WHERE Responder_id = ?";
             PreparedStatement pst = con.prepareStatement(updateQuery);
             
@@ -612,6 +651,8 @@ public class Dispatcher{
         }
     }
 
+    // Reassigns a different responder to an alert
+    // Queries: Complete old dispatch, create new dispatch, update records
     public boolean reassignResponder(Alert alert){
         String zone = alert.getUser().getZone();
         Responder current = alert.getResponder();
@@ -627,6 +668,7 @@ public class Dispatcher{
                 Connection conn = DriverManager.getConnection(dburl, dbuser, dbpass);
                 
                 if(current != null){
+                    // Query: Mark old dispatch as completed
                     String updateOldDispatchSQL = "UPDATE dispatches SET Completion_time = CURRENT_TIMESTAMP WHERE Alert_id = ? AND Responder_id = ?";
                     try (PreparedStatement pstmt = conn.prepareStatement(updateOldDispatchSQL)) {
                         pstmt.setInt(1, alert.getAlertId());
@@ -634,6 +676,7 @@ public class Dispatcher{
                         pstmt.executeUpdate();
                     }
                     
+                    // Query: Free up old responder
                     String updateOldResponderSQL = "UPDATE responder_details SET Availability = ? WHERE Responder_id = ?";
                     try (PreparedStatement pstmt = conn.prepareStatement(updateOldResponderSQL)) {
                         pstmt.setBoolean(1, true);
@@ -650,6 +693,7 @@ public class Dispatcher{
                     newResponder.getX(), newResponder.getY()
                 );
                 
+                // Query: Create new dispatch record for reassignment
                 String dispatchSQL = "INSERT INTO dispatches (Alert_id, Responder_id, Distance_km) VALUES (?, ?, ?)";
                 try (PreparedStatement pstmt = conn.prepareStatement(dispatchSQL)) {
                     pstmt.setInt(1, alert.getAlertId());
@@ -658,6 +702,7 @@ public class Dispatcher{
                     pstmt.executeUpdate();
                 }
 
+                // Query: Update alert with new responder
                 String updateAlertSQL = "UPDATE alert_details SET Responder_id = ?, Status = ? WHERE Alert_id = ?";
                 try (PreparedStatement pstmt = conn.prepareStatement(updateAlertSQL)) {
                     pstmt.setInt(1, newResponder.getId());
@@ -666,6 +711,7 @@ public class Dispatcher{
                     pstmt.executeUpdate();
                 }
 
+                // Query: Record reassignment in history
                 String historySQL = "INSERT INTO alert_status_history (Alert_id, Previous_status, Current_status, Responder_id) VALUES (?, ?, ?, ?)";
                 try (PreparedStatement pstmt = conn.prepareStatement(historySQL)) {
                     pstmt.setInt(1, alert.getAlertId());
@@ -675,6 +721,7 @@ public class Dispatcher{
                     pstmt.executeUpdate();
                 }
                 
+                // Query: Mark new responder as unavailable
                 String updateNewResponderSQL = "UPDATE responder_details SET Availability = ? WHERE Responder_id = ?";
                 try (PreparedStatement pstmt = conn.prepareStatement(updateNewResponderSQL)) {
                     pstmt.setBoolean(1, false);
@@ -703,6 +750,8 @@ public class Dispatcher{
         return false;
     }
 
+    // Finds an alternate responder excluding the current one
+    // Query: Find available responder in zone excluding specified responder ID
     private Responder findAlternateResponderFromDatabase(String zone, int excludeResponderId) {
         try {
             String dburl = "jdbc:mysql://localhost:3306/WomenSafetyDB";
@@ -711,6 +760,7 @@ public class Dispatcher{
             
             Connection con = DriverManager.getConnection(dburl, dbuser, dbpass);
             
+            // Query: Find available responder in zone excluding current responder
             String query = "SELECT * FROM responder_details WHERE Zone = ? AND Availability = true AND Responder_id != ? ORDER BY RAND() LIMIT 1";
             PreparedStatement pst = con.prepareStatement(query);
             pst.setString(1, zone);

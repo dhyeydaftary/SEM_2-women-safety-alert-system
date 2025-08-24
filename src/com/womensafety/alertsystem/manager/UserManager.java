@@ -11,17 +11,21 @@ import java.util.HashMap;
 import java.util.Collection;
 import java.util.Random;
 
+// UserManager class handles user registration, authentication, and management
+// Manages user data in both memory and database with coordinate generation
 public class UserManager{
-    private HashMap <Integer,User> users;
-    private int nextUserId;
-    private Random random;
+    private HashMap <Integer,User> users; // In-memory storage of users by ID
+    private int nextUserId; // Next available user ID
+    private Random random; // Random generator for coordinate generation
 
+    // Constructor initializes data structures and loads next user ID
     public UserManager(){
-        users=new HashMap<>();
-        random=new Random();
+        users = new HashMap<>();
+        random = new Random();
         initializeNextUserId();
     }
 
+    // Initializes the next user ID by querying the database for maximum ID
     private void initializeNextUserId() {
         try {
             String dburl = "jdbc:mysql://localhost:3306/WomenSafetyDB";
@@ -53,8 +57,10 @@ public class UserManager{
         }
     }
 
+    // Registers a new user with the system
+    // Returns: Registered User object or null if registration fails
     public User registerUser(String Name, String Phone, String Email, String Location, String Zone, String Password){
-        User newUser=new User(nextUserId, Name, Phone, Email, Location, Zone, Password);
+        User newUser = new User(nextUserId, Name, Phone, Email, Location, Zone, Password);
 
         double[] coords = generateZoneBasedCoordinates(Zone);
         newUser.setX(coords[1]);
@@ -69,9 +75,9 @@ public class UserManager{
 
             Connection con = DriverManager.getConnection(dburl, dbuser, dbpass);
 
-            if(con!=null){
+            if(con != null){
                 SystemLogger.success("Database connection established successfully.");
-            }else{
+            } else {
                 SystemLogger.error("Failed to connect to the database.");
                 return null;
             }
@@ -94,7 +100,7 @@ public class UserManager{
             if (result > 0) {
                 SystemLogger.success("User saved to database successfully!");
                 nextUserId++;
-            }else{
+            } else {
                 SystemLogger.error("Failed to save user to database.");
                 users.remove(nextUserId);
                 return null;
@@ -112,9 +118,11 @@ public class UserManager{
         return newUser;
     }
 
+    // Authenticates a user login using both memory and database
+    // Returns: Authenticated User object or null if authentication fails
     public User authenticateUserLogin(int userId, String password) {
         User user = users.get(userId);
-        if (user!=null && AuthenticationHelper.authenticateUser(user, password)) {
+        if (user != null && AuthenticationHelper.authenticateUser(user, password)) {
             user.setRole(Role.USER);
             RBACManager.setCurrentUser(user);
             return user;
@@ -168,12 +176,16 @@ public class UserManager{
         return null;
     }
 
+    // Generates random coordinates within India's boundaries
+    // Returns: Array containing [latitude, longitude]
     private double[] generateRandomCoordinates() {
         double lat = Constants.INDIA_MIN_LAT + (Constants.INDIA_MAX_LAT - Constants.INDIA_MIN_LAT) * random.nextDouble();
         double lng = Constants.INDIA_MIN_LNG + (Constants.INDIA_MAX_LNG - Constants.INDIA_MIN_LNG) * random.nextDouble();
         return new double[]{lat, lng};
     }
 
+    // Generates coordinates based on specified zone within India
+    // Returns: Array containing [latitude, longitude] for the zone
     private double[] generateZoneBasedCoordinates(String zone) {
         double baseLat, baseLng;
         double offset = 2.0;
@@ -208,6 +220,8 @@ public class UserManager{
         return new double[]{lat, lng};
     }
 
+    // Updates user coordinates in memory
+    // Returns: true if update successful, false if user not found
     public boolean updateUserCoordinates(int userId, double x, double y){
         User user = users.get(userId);
         if(user != null) {
@@ -219,8 +233,8 @@ public class UserManager{
         return false;
     }
 
-
-
+    // Updates user information in the database for various fields
+    // Returns: true if update successful, false if failed
     public boolean updateUserInDatabase(int userId, String fieldName, String oldValue, String newValue) {
         try {
             String dburl = "jdbc:mysql://localhost:3306/WomenSafetyDB";
@@ -229,10 +243,9 @@ public class UserManager{
             Connection con = DriverManager.getConnection(dburl, dbuser, dbpass);
             
             if (con != null) {
-                PreparedStatement ps1 = con.prepareStatement("SET @current_user_id = ?");
+                PreparedStatement ps1 = con.prepareStatement("SET @current_user_id = ?"); // Set session variable for user tracking
                 ps1.setInt(1, userId);
                 ps1.execute();
-                ps1.close();
                 String updateQuery = "";
                 PreparedStatement pst = null;
                 
@@ -270,7 +283,6 @@ public class UserManager{
                 int result = pst.executeUpdate();
                 
                if (result > 0) {
-                    //logUserUpdate(con, userId, fieldName, oldValue, newValue, userId);
                     SystemLogger.success("Database updated successfully for " + fieldName);
                     pst.close();
                     con.close();
@@ -286,6 +298,8 @@ public class UserManager{
         return false;
     }
 
+    // Updates user password with validation
+    // Returns: true if password update successful, false if failed
     public boolean updateUserPassword(int userId, String oldPassword, String newPassword) {
         User user = users.get(userId);
         if (user == null) {
@@ -320,7 +334,6 @@ public class UserManager{
                 int result = pst.executeUpdate();
                 
                 if (result > 0) {
-                    //logUserUpdate(con, userId, "password", "****", "****", userId);
                     SystemLogger.success("Password updated successfully!");
                     pst.close();
                     con.close();
@@ -337,16 +350,19 @@ public class UserManager{
         return false;
     }
 
-
-
+    // Gets a user by their ID from memory
+    // Returns: User object or null if not found
     public User getUserById(int Id){
         return users.get(Id);
     }
 
-    Collection<User>getAllUsers(){
+    // Gets all users from memory
+    // Returns: Collection of all User objects
+    Collection<User> getAllUsers(){
         return users.values();
     }
 
+    // Displays all users from database with formatted output
     public void displayAllUsers(){
         System.out.println(Constants.CYAN + "\n--- All Registered Users ---" + Constants.RESET);
         System.out.println("=" .repeat(80));
@@ -415,6 +431,8 @@ public class UserManager{
         System.out.println("=" .repeat(80));
     }
 
+    // Checks if a phone number already exists in the user database
+    // Returns: true if phone exists, false otherwise
     public boolean isPhoneExists(String phone) {
         String dbUrl = "jdbc:mysql://localhost:3306/WomenSafetyDB";
         String dbUser = "root";
@@ -433,5 +451,4 @@ public class UserManager{
         }
         return false;
     }
-
 }

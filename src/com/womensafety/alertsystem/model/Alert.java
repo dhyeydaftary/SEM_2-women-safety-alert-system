@@ -5,6 +5,7 @@ import com.womensafety.alertsystem.util.SystemLogger;
 import java.time.LocalDateTime;
 import java.sql.*;
 
+// Contains alert details, status tracking, and database persistence methods
 public class Alert {
     private int alertId;
     private User user;
@@ -12,12 +13,14 @@ public class Alert {
     private String status;
     private Responder assignedResponder;
 
+    // Constructor creates a new alert with default Active status
     public Alert(User user) {
         this.user = user;
         this.timestamp = LocalDateTime.now();
         this.status = Constants.STATUS_ACTIVE;
     }
 
+    // Constructor creates an alert with all fields specified
     public Alert(int alertId, User user, LocalDateTime timestamp, String status, Responder assignedResponder) {
         this.alertId = alertId;
         this.user = user;
@@ -26,7 +29,8 @@ public class Alert {
         this.assignedResponder = assignedResponder;
     }
 
-
+    // Gets the next available alert ID from the database
+    // Returns: next available alert ID
     private int getNextAlertIdFromDatabase() {
         int nextId = 1;
         try {
@@ -56,6 +60,8 @@ public class Alert {
         return nextId;
     }
 
+    // Saves the alert to the database with status history tracking
+    // Returns: true if save successful, false if failed
     public boolean saveToDatabase() {
         try {
             String dburl = "jdbc:mysql://localhost:3306/WomenSafetyDB";
@@ -112,7 +118,8 @@ public class Alert {
         }
     }
 
-
+    // Updates the alert in the database and tracks status changes
+    // Returns: true if update successful, false if failed
     public boolean updateInDatabase() {
         try {
             String dburl = "jdbc:mysql://localhost:3306/WomenSafetyDB";
@@ -177,38 +184,47 @@ public class Alert {
         }
     }
 
-    
-
+    // Gets the alert ID
     int getId(){
         return alertId;
     }
+    // Gets the alert ID (public accessor)
     public int getAlertId(){
         return alertId;
     }
+    // Gets the user who triggered the alert
     public User getUser(){
         return user;
     }
+    // Gets the alert creation timestamp
     public LocalDateTime getTimestamp(){
         return timestamp;
     }
+    // Gets the current alert status
     public String getStatus(){
         return status;
     }
+    // Gets the assigned responder (alias for getAssignedResponder)
     public Responder getResponder(){
         return assignedResponder;
     }
+    // Gets the assigned responder
     public Responder getAssignedResponder(){
         return assignedResponder;
     }
 
 
+    // Sets the alert status
     public void setStatus(String status){
         this.status = status;
     }
+    
+    // Sets the assigned responder
     public void setResponder(Responder responder){
         this.assignedResponder = responder;
     }
 
+    // Returns string representation of the alert
     @Override
     public String toString(){
         return "Alert ID:" +alertId+"\nUser: "+user.getName()+"\nTime: "+timestamp+"\nStatus: "+status+

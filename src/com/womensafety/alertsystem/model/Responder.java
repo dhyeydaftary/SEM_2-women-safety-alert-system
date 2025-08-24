@@ -3,17 +3,20 @@ package com.womensafety.alertsystem.model;
 import com.womensafety.alertsystem.util.Constants;
 import java.util.regex.Pattern;
 
+// Inherits from Person class
 public class Responder extends Person{
     private int id;
     private boolean available;
     private double x=0.0,y=0.0;
 
+    // Constructor for Responder
     public Responder(int Id, String Name, String Phone, String Email, String Zone, boolean Available, String Password){
         super(Name, Phone, Email, Zone, Password);
         this.id=Id;
         this.password=Password;
-        this.role = Role.RESPONDER;
+        this.role = Role.RESPONDER; // Set role to RESPONDER
 
+        // Validation checks
         if (this.id <= 0)
             throw new IllegalArgumentException("Responder ID must be positive");
         if (name==null || name.trim().isEmpty())
@@ -29,33 +32,41 @@ public class Responder extends Person{
         if(Password==null || Password.trim().length() < 6)
             throw new IllegalArgumentException("Password must be at least 6 characters long.");
 
-        this.available=Available;
+        this.available=Available; // Set availability status
     }
 
+    // Gets the responder's ID
     public int getId(){
         return id;
     }
+    // Checks if the responder is available
     public boolean isAvailable(){
         return available;
     }
+    // Gets the responder's X coordinate
     public double getX(){
         return x;
     }
+    // Gets the responder's Y coordinate
     public double getY(){
         return y;
     }
 
-
+    
+    // Sets the responder's availability status
     public void setAvailable(boolean available){
         this.available=available;
     }
+    // Sets the responder's X coordinate
     public void setX(double x){
         this.x=x;
     }
+    // Sets the responder's Y coordinate
     public void setY(double y){
         this.y=y;
     }
 
+    // Returns a string representation of the responder
     @Override
     public String toString() {
         return "Responder Id: " + id +
@@ -70,6 +81,7 @@ public class Responder extends Person{
 
     }
 
+    // Notifies the user when an alert is assigned to the responder
     public void notifyUserAssigned(User user) {
         System.out.println(Constants.INFO + "\n=== NEW ALERT ASSIGNED TO YOU ===" + Constants.RESET);
         System.out.println(Constants.BLUE + "Responder ID: " + Constants.RESET + this.getId());

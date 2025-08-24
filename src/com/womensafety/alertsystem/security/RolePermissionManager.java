@@ -4,12 +4,13 @@ import java.util.*;
 import com.womensafety.alertsystem.model.Role;
 import com.womensafety.alertsystem.model.Permission;
 
+// Role-Permission Manager for managing permissions associated with different roles
 public class RolePermissionManager {
-    private static final Map<Role, Set<Permission>> rolePermissions = new HashMap<>();
+    private static final Map<Role, Set<Permission>> rolePermissions = new HashMap<>(); // Map to store role-permission mappings
     
     static {
         // User permissions
-        rolePermissions.put(Role.USER, Set.of(
+        rolePermissions.put(Role.USER, Set.of( // Assign permissions to USER role
             Permission.REGISTER_USER,
             Permission.LOGIN_USER,
             Permission.RAISE_ALERT,
@@ -18,7 +19,7 @@ public class RolePermissionManager {
         ));
         
         // Responder permissions
-        rolePermissions.put(Role.RESPONDER, Set.of(
+        rolePermissions.put(Role.RESPONDER, Set.of( // Assign permissions to RESPONDER role
             Permission.REGISTER_RESPONDER,
             Permission.LOGIN_RESPONDER,
             Permission.PROCESS_NEXT_ALERT,
@@ -29,7 +30,7 @@ public class RolePermissionManager {
         ));
         
         // Admin permissions
-        rolePermissions.put(Role.ADMIN, Set.of(
+        rolePermissions.put(Role.ADMIN, Set.of( // Assign permissions to ADMIN role
             Permission.CREATE_ADMIN,
             Permission.LOGIN_ADMIN,
             Permission.DISPLAY_ALL_USERS,
@@ -40,12 +41,16 @@ public class RolePermissionManager {
         ));
     }
     
+    // Checks if a role has a specific permission
+    // Returns: true if the role has the permission, false otherwise
     public static boolean hasPermission(Role role, Permission permission) {
-        Set<Permission> permissions = rolePermissions.get(role);
-        return permissions != null && permissions.contains(permission);
+        Set<Permission> permissions = rolePermissions.get(role); // Get permissions for the role
+        return permissions != null && permissions.contains(permission); // Check if permission is present
     }
     
+    // Gets all permissions associated with a role
+    // Returns: a set of permissions for the role, or an empty set if none
     public static Set<Permission> getPermissions(Role role) {
-        return rolePermissions.getOrDefault(role, Collections.emptySet());
+        return rolePermissions.getOrDefault(role, Collections.emptySet()); // Return permissions or empty set
     }
 }

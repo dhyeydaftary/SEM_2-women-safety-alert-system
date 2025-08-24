@@ -1,3 +1,4 @@
+// Main class for the Women's Safety Alert System application
 package com.womensafety.alertsystem.main;
 
 import com.womensafety.alertsystem.model.*;
@@ -10,98 +11,20 @@ import java.sql.*;
 import java.util.*;
 import java.util.regex.Pattern;
 
-class Main{
-    private static Scanner sc=new Scanner(System.in);
-    // Initialize core managers
-    private static UserManager userManager=new UserManager();
-    private static ResponderManager responderManager=new ResponderManager();
+class Main {
+    private static Scanner sc = new Scanner(System.in); // Scanner for user input
+    // Initialize core managers for user, responder, admin, and location management
+    private static UserManager userManager = new UserManager();
+    private static ResponderManager responderManager = new ResponderManager();
     private static AdminManager adminManager = new AdminManager();
-    private static LocationManager locationManager=new LocationManager();
-    private static Dispatcher dispatcher=new Dispatcher(locationManager, userManager, responderManager);
-    // Start threads for background tasks
-    private static AlertLoopThread alertLoopThread=new AlertLoopThread(dispatcher);
-    private static Thread responderStatusCheckerThread =new Thread(new ResponderStatusChecker(locationManager));
-    private static HashMap <Integer, Alert> alertMap = new HashMap<>();
-    private static User currentUser = null;
-    private static Responder currentResponder = null;
-
-    /*
-                       JAVA, DATA STRUCTURE & DBMS CONCEPTS USED                          
-        
-        JAVA CONCEPTS IMPLEMENTED:
-        -> Object-Oriented Programming (OOP)
-          | Classes and Objects (Person, User, Responder, Alert, etc.)
-          | Inheritance (User extends Person, Responder extends Person)
-          | Encapsulation (private fields with getter/setter methods)
-          | Polymorphism (Method overriding - toString methods)
-        -> Exception Handling (try-catch blocks throughout)
-        -> Multithreading (AlertLoopThread, ResponderStatusChecker)
-        -> Enumerations (LogLevel enum in SystemLogger)
-        -> Static Methods and Variables (Constants, SystemLogger)
-        -> Constructor Overloading (Multiple constructors)
-        -> Regular Expressions (Pattern.matches for validation)
-        -> File I/O Operations (FileWriter, PrintWriter for logging)
-        -> Date/Time API (LocalDateTime, DateTimeFormatter)
-        -> Anonymous Inner Classes
-        -> Package Management (java.io.*, java.time.*, java.util.*, java.sql.*)
-        -> Generic Programming
-        
-        DATA STRUCTURE CONCEPTS:
-        -> HashMap<Integer, User> - User management by ID
-        -> HashMap<Integer, Responder> - Responder management
-        -> HashMap<String, List<Responder>> - Zone-based responder mapping
-        -> Queue<Alert> (LinkedList) - Alert processing queue
-        -> ArrayList<Responder> - Dynamic responder lists
-        -> Arrays (double[]) - Coordinate storage
-        -> Collection Framework - Generic collections
-        -> Iterator Pattern - Collection traversal
-        -> FIFO Queue Operations - First In, First Out alert processing
-        -> Generic Types - Type-safe collections
-
-        DATABASE MANAGEMENT CONCEPTS:
-        -> JDBC (Java Database Connectivity)
-        -> Database Connection Management
-        -> SQL Operations:
-          | SELECT queries (data retrieval)
-          | INSERT statements (data insertion)
-          | UPDATE statements (data modification)
-          | JOIN operations (multi-table queries)
-        -> PreparedStatement (SQL injection prevention)
-        -> ResultSet (query result processing)
-        -> Database Schema Design:
-          | user_details table
-          | responder_details table
-          | alert_details table
-          | dispatches table
-          | alert_status_history table
-          | user_update_logs table
-          | responder_update_logs table
-        -> Primary Keys (User_id, Responder_id, Alert_id)
-        -> Foreign Key Relationships
-        -> Database Constraints and Validation
-        -> Transaction Management (implicit)
-        -> Audit Trail (update logs)
-        -> Data Integrity and Consistency
-        
-        DESIGN PATTERNS & PRINCIPLES:
-        -> Singleton-like Pattern (Static managers)
-        -> Factory Pattern concepts (Object creation)
-        -> Observer Pattern (Alert notifications)");
-        -> Strategy Pattern (Different responder finding strategies)
-        -> Builder Pattern concepts (Complex object construction)
-        
-        ADVANCED FEATURES:
-        -> Background Processing (Continuous alert monitoring)
-        -> Coordinate-based Location Management
-        -> Zone-based Resource Allocation
-        -> Real-time Alert Processing
-        -> Automated Responder Assignment
-        -> Distance Calculation Algorithms
-        -> Status Tracking and History
-        -> Escalation Management
-        -> Comprehensive Logging System
-        
-    */
+    private static LocationManager locationManager = new LocationManager();
+    private static Dispatcher dispatcher = new Dispatcher(locationManager, userManager, responderManager);
+    // Start threads for background tasks related to alerts and responder status
+    private static AlertLoopThread alertLoopThread = new AlertLoopThread(dispatcher);
+    private static Thread responderStatusCheckerThread = new Thread(new ResponderStatusChecker(locationManager));
+    private static HashMap<Integer, Alert> alertMap = new HashMap<>(); // Map to track alerts by user ID
+    private static User currentUser = null; // Currently logged-in user
+    private static Responder currentResponder = null; // Currently logged-in responder
 
     // Main entry point of the Women's Safety Alert System application
     public static void main(String[] args) throws Exception {
@@ -136,7 +59,7 @@ class Main{
     // Displays the main role selection menu and handles user role choice
     private static boolean showRoleSelectionMenu(AdminManager adminManager) {
         System.out.println("\n" + "=".repeat(50));
-        System.out.println(Constants.MAGENTA_ITALIC_BOLD + "            Saftey Alert System Menu            " + Constants.RESET);
+        System.out.println(Constants.MAGENTA_ITALIC_BOLD + "            Safety Alert System Menu            " + Constants.RESET);
         System.out.println("=".repeat(50));
         System.out.println("Please select your role:");
         System.out.println("1. User");
@@ -160,9 +83,9 @@ class Main{
         return true;
     }
 
-
+    // Displays the user menu and handles user interactions based on login status
     private static boolean showUserMenu() {
-        boolean runUser = true;
+        boolean runUser = true; // Control variable for the user menu loop
         while (runUser) {
             System.out.println("\n" + "=".repeat(50));
             System.out.println(Constants.BLUE + " USER MENU " + Constants.RESET);
@@ -170,81 +93,86 @@ class Main{
             
             // Show different options based on whether user is logged in
             if (RBACManager.isLoggedIn() && RBACManager.hasRole(Role.USER)) {
+                // User is logged in - show post-login options
                 Person loggedInPerson = (Person) RBACManager.getCurrentUser();
                 System.out.println("Logged in as: " + loggedInPerson.getName());
                 System.out.println("3. Raise Alert");
                 System.out.println("4. Update Profile");
                 System.out.println("5. Logout");
             } else {
+                // User is not logged in - show pre-login options
                 System.out.println("1. Register User");
                 System.out.println("2. Login User");
                 System.out.println("0. Exit to Main Menu");
             }
             System.out.println("=".repeat(50));
 
+            // Determine maximum valid choice based on login status
             int maxChoice = RBACManager.isLoggedIn() && RBACManager.hasRole(Role.USER) ? 5 : 2;
-            int choice = getValidChoice(0, maxChoice);
+            int choice = getValidChoice(0, maxChoice); // Get validated user input
 
+            // Handle menu selection based on user's choice
             switch (choice) {
-                case 1:
+                case 1: // User registration
                     if (!(RBACManager.isLoggedIn() && RBACManager.hasRole(Role.USER))) {
-                        handleUserRegistration();
+                        handleUserRegistration(); // Call user registration handler
                     }
                     break;
 
-                case 2:
+                case 2: // User login
                     if (!(RBACManager.isLoggedIn() && RBACManager.hasRole(Role.USER))) {
-                        handleUserLogin();
+                        handleUserLogin(); // Call user login handler
                     }
                     break;
 
-                case 3:
+                case 3: // Raise alert
                     if (RBACManager.isLoggedIn() && RBACManager.hasRole(Role.USER)) {
                         try {
-                            RBACManager.checkPermission(Permission.RAISE_ALERT);
-                            handleRaiseAlert();
+                            RBACManager.checkPermission(Permission.RAISE_ALERT); // Check permission to raise alert
+                            handleRaiseAlert(); // Call alert creation handler
                         } catch (SecurityException e) {
-                            SystemLogger.error("Access denied: " + e.getMessage());
+                            SystemLogger.error("Access denied: " + e.getMessage()); // Log permission denial
                         }
                     }
                     break;
 
-                case 4:
+                case 4: // Update profile
                     if (RBACManager.isLoggedIn() && RBACManager.hasRole(Role.USER)) {
                         try {
-                            RBACManager.checkPermission(Permission.UPDATE_USER_DETAILS);
-                            handleUpdateUserProfile();
+                            RBACManager.checkPermission(Permission.UPDATE_USER_DETAILS); // Check permission to update profile
+                            handleUpdateUserProfile(); // Call profile update handler
                         } catch (SecurityException e) {
-                            SystemLogger.error("Access denied: " + e.getMessage());
+                            SystemLogger.error("Access denied: " + e.getMessage()); // Log permission denial
                         }
                     }
                     break;
 
-                case 5:
+                case 5: // Logout
                     if (RBACManager.isLoggedIn() && RBACManager.hasRole(Role.USER)) {
-                        RBACManager.logout();
-                        SystemLogger.success("User logged out successfully");
+                        RBACManager.logout(); // Terminate current user session
+                        SystemLogger.success("User logged out successfully"); // Log successful logout
                     }
                     break;
 
-                case 0:
-                    runUser=false;
+                case 0: // Exit to main menu
+                    runUser = false; // Break out of user menu loop
                     break;
             }
         }
-        return true;
+        return true; // Return control to calling method
     }
 
-
+    // Displays the responder menu and handles responder interactions based on login status
     private static boolean showResponderMenu() {
-        boolean runResponder=true;
-        while(runResponder) {
+        boolean runResponder = true; // Control variable for the responder menu loop
+        while (runResponder) {
             System.out.println("\n" + "=".repeat(50));
             System.out.println(Constants.BLUE + " RESPONDER MENU " + Constants.RESET);
             System.out.println("=".repeat(50));
             
             // Show different options based on whether responder is logged in
             if (RBACManager.isLoggedIn() && RBACManager.hasRole(Role.RESPONDER)) {
+                // Responder is logged in - show post-login options
                 System.out.println("Logged in as: " + RBACManager.getCurrentUser().getName());
                 System.out.println("3. Process Next Alert");
                 System.out.println("4. Complete Alert");
@@ -252,95 +180,101 @@ class Main{
                 System.out.println("6. Update Profile");
                 System.out.println("7. Logout");
             } else {
+                // Responder is not logged in - show pre-login options
                 System.out.println("1. Register Responder");
                 System.out.println("2. Login Responder");
                 System.out.println("0. Exit to Main Menu");
             }
             System.out.println("=".repeat(50));
 
+            // Determine maximum valid choice based on login status
             int maxChoice = RBACManager.isLoggedIn() && RBACManager.hasRole(Role.RESPONDER) ? 7 : 2;
-            int choice = getValidChoice(0, maxChoice);
+            int choice = getValidChoice(0, maxChoice); // Get validated responder input
 
+            // Handle menu selection based on responder's choice
             switch (choice) {
-                case 1:
+                case 1: // Responder registration
                     if (!(RBACManager.isLoggedIn() && RBACManager.hasRole(Role.RESPONDER))) {
-                        handleResponderRegistration();
+                        handleResponderRegistration(); // Call responder registration handler
                     }
                     break;
 
-                case 2:
+                case 2: // Responder login
                     if (!(RBACManager.isLoggedIn() && RBACManager.hasRole(Role.RESPONDER))) {
-                        handleResponderLogin();
+                        handleResponderLogin(); // Call responder login handler
                     }
                     break;
 
-                case 3:
+                case 3: // Process next alert
                     if (RBACManager.isLoggedIn() && RBACManager.hasRole(Role.RESPONDER)) {
                         try {
-                            RBACManager.checkPermission(Permission.PROCESS_NEXT_ALERT);
-                            dispatcher.processNextAlert();
+                            RBACManager.checkPermission(Permission.PROCESS_NEXT_ALERT); // Check permission to process alerts
+                            dispatcher.processNextAlert(); // Call alert processing handler
                         } catch (SecurityException e) {
-                            SystemLogger.error("Access denied: " + e.getMessage());
+                            SystemLogger.error("Access denied: " + e.getMessage()); // Log permission denial
                         }
                     }
                     break;
 
-                case 4:
+                case 4: // Complete alert
                     if (RBACManager.isLoggedIn() && RBACManager.hasRole(Role.RESPONDER)) {
                         try {
-                            RBACManager.checkPermission(Permission.COMPLETE_ALERT);
-                            handleCompleteAlert();
+                            RBACManager.checkPermission(Permission.COMPLETE_ALERT); // Check permission to complete alerts
+                            handleCompleteAlert(); // Call alert completion handler
                         } catch (SecurityException e) {
-                            SystemLogger.error("Access denied: " + e.getMessage());
+                            SystemLogger.error("Access denied: " + e.getMessage()); // Log permission denial
                         }
                     }
                     break;
 
-                case 5:
+                case 5: // Show pending alerts
                     if (RBACManager.isLoggedIn() && RBACManager.hasRole(Role.RESPONDER)) {
                         try {
-                            RBACManager.checkPermission(Permission.SHOW_PENDING_ALERTS);
-                            dispatcher.showPendingAlerts();
+                            RBACManager.checkPermission(Permission.SHOW_PENDING_ALERTS); // Check permission to view alerts
+                            dispatcher.showPendingAlerts(); // Call pending alerts display handler
                         } catch (SecurityException e) {
-                            SystemLogger.error("Access denied: " + e.getMessage());
+                            SystemLogger.error("Access denied: " + e.getMessage()); // Log permission denial
                         }
                     }
                     break;
 
-                case 6:
+                case 6: // Update profile
                     if (RBACManager.isLoggedIn() && RBACManager.hasRole(Role.RESPONDER)) {
                         try {
-                            RBACManager.checkPermission(Permission.UPDATE_RESPONDER_DETAILS);
-                            handleUpdateResponderProfile();
+                            RBACManager.checkPermission(Permission.UPDATE_RESPONDER_DETAILS); // Check permission to update profile
+                            handleUpdateResponderProfile(); // Call profile update handler
                         } catch (SecurityException e) {
-                            SystemLogger.error("Access denied: " + e.getMessage());
+                            SystemLogger.error("Access denied: " + e.getMessage()); // Log permission denial
                         }
                     }
                     break;
 
-                case 7:
+                case 7: // Logout
                     if (RBACManager.isLoggedIn() && RBACManager.hasRole(Role.RESPONDER)) {
-                        RBACManager.logout();
-                        SystemLogger.success("Responder logged out successfully");
+                        RBACManager.logout(); // Terminate current responder session
+                        SystemLogger.success("Responder logged out successfully"); // Log successful logout
                     }
                     break;
 
-                case 0:
-                   runResponder=false;
+                case 0: // Exit to main menu
+                    runResponder = false; // Break out of responder menu loop
+                    break;
             }
         }
-        return true;
+        return true; // Return control to calling method
     }
 
+    // Displays the admin menu and handles admin interactions based on login status
     private static boolean showAdminMenu(AdminManager adminManager) {
-        boolean runAdmin=true;
+        boolean runAdmin = true; // Control variable for the admin menu loop
         while (runAdmin) {
-            System.out.println("\n" + "=".repeat(50));
+            System.out.println("\n" + "=".repeat(50)); // Menu header formatting
             System.out.println(Constants.BLUE + " ADMIN MENU " + Constants.RESET);
             System.out.println("=".repeat(50));
             
             // Show different options based on whether admin is logged in
             if (RBACManager.isLoggedIn() && RBACManager.hasRole(Role.ADMIN)) {
+                // Admin is logged in - show post-login options
                 System.out.println("Logged in as: " + RBACManager.getCurrentUser().getName());
                 System.out.println("3. View All Users");
                 System.out.println("4. View All Responders");
@@ -348,93 +282,103 @@ class Main{
                 System.out.println("6. System Statistics");
                 System.out.println("7. Logout");
             } else {
+                // Admin is not logged in - show pre-login options
                 System.out.println("1. Create Admin Account");
                 System.out.println("2. Login Admin");
                 System.out.println("0. Exit to Main Menu");
             }
             System.out.println("=".repeat(50));
 
+            // Determine maximum valid choice based on login status
             int maxChoice = RBACManager.isLoggedIn() && RBACManager.hasRole(Role.ADMIN) ? 7 : 2;
-            int choice = getValidChoice(0, maxChoice);
+            int choice = getValidChoice(0, maxChoice); // Get validated admin input
 
+            // Handle menu selection based on admin's choice
             switch (choice) {
-                case 1:
-                    handleAdminCreation(adminManager);
+                case 1: // Admin account creation
+                    handleAdminCreation(adminManager); // Call admin registration handler
                     break;
 
-                case 2:
-                    handleAdminLogin(adminManager);
+                case 2: // Admin login
+                    handleAdminLogin(adminManager); // Call admin authentication handler
                     break;
 
-                case 3:
+                case 3: // View all users
                     try {
-                        RBACManager.checkPermission(Permission.DISPLAY_ALL_USERS);
-                        userManager.displayAllUsers();
+                        RBACManager.checkPermission(Permission.DISPLAY_ALL_USERS); // Check permission to view users
+                        userManager.displayAllUsers(); // Call user display handler
                     } catch (SecurityException e) {
-                        SystemLogger.error("Access denied: " + e.getMessage());
+                        SystemLogger.error("Access denied: " + e.getMessage()); // Log permission denial
                     }
                     break;
 
-                case 4:
+                case 4: // View all responders
                     try {
-                        RBACManager.checkPermission(Permission.DISPLAY_ALL_RESPONDERS);
-                        responderManager.displayAllResponders();
+                        RBACManager.checkPermission(Permission.DISPLAY_ALL_RESPONDERS); // Check permission to view responders
+                        responderManager.displayAllResponders(); // Call responder display handler
                     } catch (SecurityException e) {
-                        SystemLogger.error("Access denied: " + e.getMessage());
+                        SystemLogger.error("Access denied: " + e.getMessage()); // Log permission denial
                     }
                     break;
 
-                case 5:
+                case 5: // View pending alerts
                     try {
-                        RBACManager.checkPermission(Permission.VIEW_PENDING_ALERTS);
-                        dispatcher.showPendingAlerts();
+                        RBACManager.checkPermission(Permission.VIEW_PENDING_ALERTS); // Check permission to view alerts
+                        dispatcher.showPendingAlerts(); // Call pending alerts display handler
                     } catch (SecurityException e) {
-                        SystemLogger.error("Access denied: " + e.getMessage());
+                        SystemLogger.error("Access denied: " + e.getMessage()); // Log permission denial
                     }
                     break;
 
-                case 6:
+                case 6: // View system statistics
                     try {
-                        RBACManager.checkPermission(Permission.VIEW_SYSTEM_STATISTICS);
-                        adminManager.displaySystemStatistics();
+                        RBACManager.checkPermission(Permission.VIEW_SYSTEM_STATISTICS); // Check permission to view statistics
+                        adminManager.displaySystemStatistics(); // Call system statistics handler
                     } catch (SecurityException e) {
-                        SystemLogger.error("Access denied: " + e.getMessage());
+                        SystemLogger.error("Access denied: " + e.getMessage()); // Log permission denial
                     }
                     break;
 
-                case 7:
+                case 7: // Admin logout
                     if (RBACManager.isLoggedIn() && RBACManager.hasRole(Role.ADMIN)) {
-                        RBACManager.logout();
-                        SystemLogger.success("Admin logged out successfully");
+                        RBACManager.logout(); // Terminate current admin session
+                        SystemLogger.success("Admin logged out successfully"); // Log successful logout
                     }
                     break;
 
-                case 0:
-                    runAdmin=false;
+                case 0: // Exit to main menu
+                    runAdmin = false; // Break out of admin menu loop
+                    break;
             }
         }
-        return true;
+        return true; // Return control to calling method
     }
 
-
+    // Validates and retrieves user input within a specified range
     private static int getValidChoice(int min, int max) {
         int choice = -1;
         boolean validInput = false;
+        
         while (!validInput) {
             System.out.print("Enter your choice (" + min + "-" + max + "): ");
             try {
+                // Check if next input is an integer
                 if (sc.hasNextInt()) {
                     choice = sc.nextInt();
                     sc.nextLine();
+                    
+                    // Validate if choice is within the specified range
                     if (choice >= min && choice <= max) {
-                        validInput = true;
+                        validInput = true; // Mark input as valid
                     } else {
+                        // Log error for out-of-range input
                         SystemLogger.error("Invalid choice! Please enter a number between " + min + " and " + max + ".");
                         System.out.println("");
                     }
                 } else {
+                    // Log error for non-integer input
                     SystemLogger.error("Invalid input! Please enter a valid number.");
-                    sc.nextLine(); // Clear invalid input
+                    sc.nextLine();
                     System.out.println("");
                 }
             } catch (Exception e) {
@@ -442,106 +386,126 @@ class Main{
                 sc.nextLine();
             }
         }
-        return choice;
+        return choice; // Return the validated choice
     }
 
-
+    // Handles the complete user registration process with comprehensive input validation
     private static void handleUserRegistration() {
         String userName, userPhone, userEmail, userLocation, userZone, userPassword;
         System.out.println(Constants.CYAN+ "\n--- Register User ---" +Constants.RESET);
 
+        // Validate and collect user name with alphabetic characters and spaces only
         while (true) {
             System.out.print("Name: ");
             userName = sc.nextLine().trim();
+
+            // Check for empty input, "null" values, and non-alphabetic characters
             if(userName.isEmpty() || "null".equalsIgnoreCase(userName) || !userName.matches("[a-zA-Z ]+")) {
                 SystemLogger.error("Invalid name.");
                 System.out.println("");
             } else {
-                break;
+                break; // Exit loop when valid name is provided
             }
         }
 
+        // Validate and collect phone number with format and duplicate checks
         while (true) {
             System.out.print("Phone (10-digit): +91 ");
             userPhone = sc.nextLine().trim();
 
-            // Check format first
+            // Check format first - validate against phone pattern regex
             if (!userPhone.matches(Constants.PHONE_PATTERN)) {
                 SystemLogger.error("Invalid phone number.");
                 System.out.println("");
-                continue;
+                continue; // Continue loop for re-entry
             }
 
-            // Check duplicate in DB
+            // Check duplicate in DB - ensure phone number is not already registered
             if (userManager.isPhoneExists(userPhone)) {
                 SystemLogger.error("This phone number is already registered. Please use another one.");
                 System.out.println("");
-                continue;
+                continue; // Continue loop for re-entry
             }
 
-            break;
+            break; // Exit loop when valid and unique phone is provided
         }
 
+        // Validate and collect email address with specific domain requirement
         while (true) {
             System.out.print("Email (must end with @gmail.com): ");
             userEmail=sc.nextLine().trim();
+
+            // Validate email format against predefined pattern
             if(Pattern.matches(Constants.EMAIL_PATTERN, userEmail)) {
-                break;
+                break; // Exit loop when valid email is provided
             } else {
                 SystemLogger.error("Invalid email format.");
                 System.out.println("");
             }
         }
 
+        // Validate and collect user location/landmark information
         while (true) {
             System.out.print("Location (Landmark): ");
             userLocation = sc.nextLine();
+
+            // Check for empty input or "null" values
             if(userLocation.trim().isEmpty() || "null".equalsIgnoreCase(userLocation)) {
                 SystemLogger.error("Invalid location.");
                 System.out.println("");
             } else {
-                break;
+                break; // Exit loop when valid location is provided
             }
         }
 
+        // Validate and collect zone information with specific allowed values
         while (true) {
             System.out.print("Zone (North/South/East/West): ");
             userZone=sc.nextLine().trim().toLowerCase();
+
+            // Validate zone against predefined pattern (north/south/east/west)
             if(Pattern.matches(Constants.ZONE_PATTERN, userZone)) {
-                break;
+                break; // Exit loop when valid zone is provided
             } else {
                 SystemLogger.error("Invalid zone. It must be North, South, East, or West.");
                 System.out.println("");
             }
         }
 
+        // Validate and collect password with minimum length requirement
         while (true) {
             System.out.print("Password (min 6 chars): ");
             userPassword = sc.nextLine().trim();
+            
+            // Validate password meets minimum security requirements
             if (AuthenticationHelper.isValidPassword(userPassword)) {
-                break;
+                break; // Exit loop when valid password is provided
             } else {
                 SystemLogger.error("Password must be at least 6 characters.");
                 System.out.println("");
             }
         }
 
+        // Attempt to register user with all validated data
         try{
+            // Call user manager to create new user record in database
             User newUser = userManager.registerUser(userName, userPhone, userEmail, userLocation, userZone, userPassword);
+            // Display success message with generated user ID
             SystemLogger.success("User registered successfully. Your ID is: "+newUser.getId());
         } catch (IllegalArgumentException e) {
+            // Handle registration failures and display error message
             SystemLogger.error("Registration failed: "+e.getMessage());
             System.out.println("");
         }
     }
 
-
-    // Handle user login
+    // Handle user login - authenticates existing users and establishes session
     private static void handleUserLogin() {
         System.out.println(Constants.CYAN+ "\n--- User Login ---" +Constants.RESET);
         int userId;
         String userPasswordLogin;
 
+        // Validate and collect user ID input with numeric validation
         while (true) {
             System.out.print("Enter your User ID: ");
             String input = sc.nextLine().trim();
@@ -550,120 +514,142 @@ class Main{
                 userId = Integer.parseInt(input);
                 break;
             } catch (NumberFormatException e) {
+                // Handle non-numeric input with error message
                 SystemLogger.error("Please enter a valid number.");
                 System.out.println("");
             }
         }
 
+        // Collect password input without echo (security consideration)
         System.out.print("Enter your password: ");
         userPasswordLogin = sc.nextLine().trim();
 
+        // Authenticate user credentials against database using UserManager
         User loginUser = userManager.authenticateUserLogin(userId, userPasswordLogin);
+        
         System.out.println("\n" + "─".repeat(85));
+        
+        // Handle authentication result
         if (loginUser != null) {
-            currentUser = loginUser;
+            currentUser = loginUser; // Set current user session
+            // Display personalized welcome message with user's name
             SystemLogger.success("Login successful. Welcome "+loginUser.getName()+"!");
         } else {
+            // Display authentication failure message
             SystemLogger.error("Invalid credentials. Please check your ID and password.");
         }
         System.out.println("─".repeat(85)); 
     }
 
-
-
+    // Handles the complete responder registration process with comprehensive input validation
     private static void handleResponderRegistration() {
         String respName, respPhone, respEmail, respZone, respPassword;
         boolean available;
 
         System.out.println(Constants.CYAN+ "\n--- Register Responder ---" +Constants.RESET);
 
+        // Validate and collect responder name with alphabetic characters and spaces only
         while (true) {
             System.out.print("Name: ");
             respName = sc.nextLine().trim();
+            // Check for empty input, "null" values, and non-alphabetic characters
             if(respName.isEmpty() ||  "null".equalsIgnoreCase(respName) || !respName.matches("[a-zA-Z ]+")) {
                 SystemLogger.error("Invalid name. Only letters and spaces allowed.");
                 System.out.println("");
             } else {
-                break;
+                break; // Exit loop when valid name is provided
             }
         }
 
+        // Validate and collect phone number with format validation and duplicate checking
         while (true) {
             System.out.print("Phone (10-digit): +91 ");
             respPhone = sc.nextLine().trim();
 
-            // Validate phone format first
+            // Validate phone format first - ensure it matches the required pattern
             if (!Pattern.matches(Constants.PHONE_PATTERN, respPhone)) {
                 SystemLogger.error("Invalid phone number.");
                 System.out.println("");
-                continue; // ask again
+                continue; // Continue loop for re-entry
             }
 
-            // Check for duplicate immediately
-            if (responderManager.isPhoneExists(respPhone)) { // <-- Add this method
+            // Check for duplicate immediately - ensure phone number is not already registered
+            if (responderManager.isPhoneExists(respPhone)) {
                 SystemLogger.error("Phone number already exists. Please enter a new number.");
                 System.out.println("");
-                continue; // ask again
+                continue; // Continue loop for re-entry
             }
 
-            break; // valid & not duplicate
+            break; // Exit loop when valid and unique phone is provided
         }
 
+        // Validate and collect email address with specific domain requirement
         while (true) {
             System.out.print("Email (must end with @gmail.com): ");
             respEmail=sc.nextLine().trim();
+            // Validate email format against predefined pattern
             if(Pattern.matches(Constants.EMAIL_PATTERN, respEmail)) {
-                break;
+                break; // Exit loop when valid email is provided
             } else {
                 SystemLogger.error("Invalid email format.");
                 System.out.println("");
             }
         }
 
+        // Validate and collect zone information with specific allowed values
         while (true) {
             System.out.print("Zone (North/South/East/West): ");
             respZone=sc.nextLine().trim().toLowerCase();
+            // Validate zone against predefined pattern (north/south/east/west)
             if(Pattern.matches(Constants.ZONE_PATTERN, respZone)) {
-                break;
+                break; // Exit loop when valid zone is provided
             } else {
                 SystemLogger.error("Invalid zone. It must be North, South, East, or West.");
                 System.out.println("");
             }
         }
 
+        // Validate and collect availability status with boolean input validation
         while (true) {
             System.out.print("Available (true/false): ");
             String availabilityInput = sc.nextLine().toLowerCase();
+            // Validate input is either "true" or "false" (case-insensitive)
             if ("true".equalsIgnoreCase(availabilityInput) || "false".equalsIgnoreCase(availabilityInput)) {
                 available = Boolean.parseBoolean(availabilityInput);
-                break;
+                break; // Exit loop when valid availability is provided
             } else {
                 SystemLogger.error("Invalid input. Please enter true or false.");
                 System.out.println("");
             }
         }
 
+        // Validate and collect password with minimum length requirement
         while (true) {
             System.out.print("Password (min 6 chars): ");
             respPassword = sc.nextLine().trim();
+            // Validate password meets minimum security requirements
             if (AuthenticationHelper.isValidPassword(respPassword)) {
-                break;
+                break; // Exit loop when valid password is provided
             } else {
                 SystemLogger.error("Password must be at least 6 characters.");
                 System.out.println("");
             }
         }
 
+        // Attempt to register responder with all validated data
         try {
+            // Call responder manager to create new responder record in database
             Responder responder = responderManager.registerResponder(respName, respPhone, respEmail, respZone, available, respPassword);
+            // Add responder to location manager for zone-based tracking
             locationManager.addResponder(responder);
+            // Display success message with generated responder ID
             SystemLogger.success("Responder registered successfully. Your ID is: "+responder.getId());
         } catch (IllegalArgumentException e) {
+            // Handle registration failures and display error message
             SystemLogger.error("Registration failed: "+e.getMessage());
             System.out.println("");
         }
     }
-
 
     // Handle responder login
     private static void handleResponderLogin() {
@@ -671,6 +657,7 @@ class Main{
         int responderId;
         String responderPasswordLogin;
 
+        // Validate and collect responder ID input with numeric validation
         while (true) {
             System.out.print("Enter your Responder ID: ");
             String input = sc.nextLine().trim();
@@ -683,11 +670,15 @@ class Main{
             }
         }
 
+        // Collect password input without echo (security consideration)
         System.out.print("Enter your password: ");
         responderPasswordLogin = sc.nextLine();
 
+        // Authenticate responder credentials against database using ResponderManager
         Responder loginResponder = responderManager.authenticateResponderLogin(responderId, responderPasswordLogin);
         System.out.println("\n" + "─".repeat(85));
+        
+        // Handle authentication result
         if (loginResponder != null) {
             SystemLogger.success("Login successful. Welcome " + loginResponder.getName() + "!");
         } else {
@@ -696,12 +687,12 @@ class Main{
         System.out.println("─".repeat(85));
     }
 
-
     // Handle admin creation
     private static void handleAdminCreation(AdminManager adminManager) {
         String adminName, adminPhone, adminEmail, adminPassword;
         System.out.println(Constants.CYAN + "\n--- Create Admin Account ---" + Constants.RESET);
         
+        // Validate and collect admin name with alphabetic characters and spaces only
         while (true) {
             System.out.print("Name: ");
             adminName = sc.nextLine().trim();
@@ -709,47 +700,50 @@ class Main{
                 SystemLogger.error("Invalid name. Only letters and spaces are allowed.");
                 System.out.println("");
             } else {
-                break;
+                break; // Exit loop when valid name is provided
             }
         }
 
+        // Validate and collect phone number with format validation and duplicate checking
         while (true) {
             System.out.print("Phone (10-digit): +91 ");
             adminPhone = sc.nextLine().trim();
 
-
+            // Validate phone format first - ensure it matches the required pattern
             if (!adminPhone.matches(Constants.PHONE_PATTERN)) {
                 SystemLogger.error("Invalid phone number. Must be 10 digits starting with 7, 8, or 9.");
                 System.out.println("");
-                continue;
+                continue; // Continue loop for re-entry
             }
 
-
+            // Check for duplicate immediately - ensure phone number is not already registered
             if (adminManager.isPhoneExists(adminPhone)) {
                 SystemLogger.error("This phone number is already registered for another Admin. Please use a different number.");
                 System.out.println("");
-                continue;
+                continue; // Continue loop for re-entry
             }
 
-            break;
+            break; // Exit loop when valid and unique phone is provided
         }
 
+        // Validate and collect email address with specific domain requirement
         while (true) {
             System.out.print("Email (must end with @gmail.com): ");
             adminEmail = sc.nextLine().trim();
             if(Pattern.matches(Constants.EMAIL_PATTERN, adminEmail)) {
-                break;
+                break; // Exit loop when valid email is provided
             } else {
                 SystemLogger.error("Invalid email format. Email must end with @gmail.com.");
                 System.out.println("");
             }
         }
         
+        // Validate and collect password with minimum length requirement
         while (true) {
             System.out.print("Password (min 6 chars): ");
             adminPassword = sc.nextLine().trim();
             if (AuthenticationHelper.isValidPassword(adminPassword)) {
-                break;
+                break; // Exit loop when valid password is provided
             } else {
                 SystemLogger.error("Password must be at least 6 characters long.");
                 System.out.println("");
@@ -781,13 +775,13 @@ class Main{
         }
     }
 
-
     // Handle admin login
     private static void handleAdminLogin(AdminManager adminManager) {
         System.out.println(Constants.CYAN + "\n--- Admin Login ---" + Constants.RESET);
         int adminId;
         String adminPasswordLogin;
 
+        // Validate and collect admin ID input with numeric validation
         while (true) {
             System.out.print("Enter your Admin ID: ");
             String input = sc.nextLine();
@@ -800,12 +794,15 @@ class Main{
             }
         }
 
+        // Collect password input
         System.out.print("Enter your password: ");
         adminPasswordLogin = sc.nextLine().trim();
 
+        // Authenticate admin credentials against database using AdminManager
         Admin loginAdmin = adminManager.authenticateAdminLogin(adminId, adminPasswordLogin);
         System.out.println("\n" + "─".repeat(85));
         
+        // Handle authentication result
         if (loginAdmin != null) {
             SystemLogger.success("Login successful. Welcome " + loginAdmin.getName() + "!");
         } else {
@@ -813,7 +810,6 @@ class Main{
         }
         System.out.println("─".repeat(85));
     }
-
 
     // Check if a user has any active alerts (active, assigned, or waiting status)
     private static boolean hasActiveAlert(int userId) {
@@ -851,7 +847,6 @@ class Main{
         }
     }
     
-
     // Retrieve the most recent active alert for a specific user from database
     private static Alert getUserActiveAlert(int userId) {
         try {
@@ -939,7 +934,6 @@ class Main{
         return null; // Return null if no active alert found
     }
 
-
     // Update database with responder assignment details including distance calculation
     private static void updateAssignmentInDatabase(Alert alert, Responder responder, double distance) {
         try {
@@ -992,7 +986,7 @@ class Main{
         }
     }
 
-
+    // Handle raising an alert by the user
     private static void handleRaiseAlert() {
         try {
             RBACManager.checkPermission(Permission.RAISE_ALERT);
@@ -1034,214 +1028,214 @@ class Main{
         }
     }
 
-
+    // Handle completing an alert
     private static void handleCompleteAlert() {
         try {
-            RBACManager.checkPermission(Permission.COMPLETE_ALERT);
-            User currentUser = (User) RBACManager.getCurrentUser();
-            Alert userAlert = getUserActiveAlert(currentUser.getId());
+            RBACManager.checkPermission(Permission.COMPLETE_ALERT); // Verify user has permission to complete alerts
+            User currentUser = (User) RBACManager.getCurrentUser(); // Get the currently logged-in user
+            Alert userAlert = getUserActiveAlert(currentUser.getId()); // Retrieve user's active alert from database
             if (userAlert != null) {
-                dispatcher.completeAlert(userAlert);
-                alertMap.remove(currentUser.getId());
+                dispatcher.completeAlert(userAlert); // Notify dispatcher to mark alert as completed
+                alertMap.remove(currentUser.getId()); // Remove alert from local tracking map
             } else {
-                SystemLogger.info("No active alert found for your account.");
+                SystemLogger.info("No active alert found for your account."); // Log info if no active alert exists
             }
         } catch (Exception e) {
-            SystemLogger.info("No Pending alert found for your account.");
+            SystemLogger.info("No Pending alert found for your account."); // Handle exception when no pending alerts
         }
     }
 
-
-    // Handle updating user profile
+    // Handle updating user profile - allows users to modify their personal information
     private static void handleUpdateUserProfile() {
-        Person currentPerson = RBACManager.getCurrentUser();
-        if (currentPerson == null || !(currentPerson instanceof User)) {
-            SystemLogger.error("No user is currently logged in.");
-            return;
+        Person currentPerson = RBACManager.getCurrentUser(); // Get currently logged-in user from RBAC system
+        if (currentPerson == null || !(currentPerson instanceof User)) { // Validate user is logged in and is a User type
+            SystemLogger.error("No user is currently logged in."); // Log error if no user is authenticated
+            return; // Exit method if validation fails
         }
         
-        User currentUser = (User) currentPerson;
+        User currentUser = (User) currentPerson; // Cast to User type for user-specific operations
         
-        System.out.println(Constants.CYAN + "\n--- Update User Details ---" + Constants.RESET);
-        System.out.println("Current User Information:");
-        System.out.println("─".repeat(50));
-        System.out.println("Name: " + currentUser.getName());
-        System.out.println("Phone: +91 " + currentUser.getPhone());
-        System.out.println("Email: " + currentUser.getEmail());
-        System.out.println("Location: " + currentUser.getLocation());
-        System.out.println("Zone: " + currentUser.getZone());
-        System.out.println("─".repeat(50));
-        System.out.println();
+        System.out.println(Constants.CYAN + "\n--- Update User Details ---" + Constants.RESET); // Display update header
+        System.out.println("Current User Information:"); // Show current user info section
+        System.out.println("─".repeat(50)); // Visual separator
+        System.out.println("Name: " + currentUser.getName()); // Display current name
+        System.out.println("Phone: +91 " + currentUser.getPhone()); // Display current phone
+        System.out.println("Email: " + currentUser.getEmail()); // Display current email
+        System.out.println("Location: " + currentUser.getLocation()); // Display current location
+        System.out.println("Zone: " + currentUser.getZone()); // Display current zone
+        System.out.println("─".repeat(50)); // Visual separator
+        System.out.println(); // Empty line for spacing
         
-        boolean validUpdate = true;
-        while(validUpdate){
-            System.out.println("\nSelect the field you want to update:");
-            System.out.println("1. Name");
-            System.out.println("2. Phone");
-            System.out.println("3. Email");
-            System.out.println("4. Location");
-            System.out.println("5. Zone");
-            System.out.println("6. Password");
-            System.out.println("7. Update All Details (Except Password)");
-            System.out.println("0. Exit");
-            System.out.print("Enter your choice: ");
-            int updateUser = getValidChoice(0, 7);
+        boolean validUpdate = true; // Control variable for update menu loop
+        while(validUpdate){ // Main update menu loop
+            System.out.println("\nSelect the field you want to update:"); // Display update options
+            System.out.println("1. Name"); // Option to update name
+            System.out.println("2. Phone"); // Option to update phone
+            System.out.println("3. Email"); // Option to update email
+            System.out.println("4. Location"); // Option to update location
+            System.out.println("5. Zone"); // Option to update zone
+            System.out.println("6. Password"); // Option to update password
+            System.out.println("7. Update All Details (Except Password)"); // Option for bulk update
+            System.out.println("0. Exit"); // Option to exit update menu
+            System.out.print("Enter your choice: "); // Prompt for user input
+            int updateUser = getValidChoice(0, 7); // Get validated user choice within range 0-7
             
-            switch (updateUser) {
-                case 1:
-                    System.out.println(Constants.CYAN + "\n--- Update User Name ---" + Constants.RESET);
-                    System.out.println("");
-                    while(true){
-                        System.out.print("Current Name: " + currentUser.getName());
+            switch (updateUser) { // Process user's menu selection
+                case 1: // Name update section - handles user name modification
+                    System.out.println(Constants.CYAN + "\n--- Update User Name ---" + Constants.RESET); // Name update header
+                    System.out.println(""); // Empty line for spacing
+                    while(true){ // Name validation loop
+                        System.out.print("Current Name: " + currentUser.getName()); // Show current name
                         System.out.print("\nNew Name: ");
                         String newName = sc.nextLine().trim();
 
-                        if (newName.isEmpty() || "null".equalsIgnoreCase(newName) || !newName.matches("[a-zA-Z\\s]+$")) {
-                            SystemLogger.error("Update cancelled - Invalid name. Only letters and spaces are allowed.");
+                        if (newName.isEmpty() || "null".equalsIgnoreCase(newName) || !newName.matches("[a-zA-Z\\s]+$")) { // Validate name format
+                            SystemLogger.error("Update cancelled - Invalid name. Only letters and spaces are allowed."); // Log validation error
                             System.out.println("");
                         } else {
-                            String oldName = currentUser.getName();
-                            currentUser.setName(newName);
+                            String oldName = currentUser.getName(); // Store old name for potential rollback
+                            currentUser.setName(newName); // Update local user object
 
-                            if (userManager.updateUserInDatabase(currentUser.getId(), "name", oldName, newName)) {
-                                SystemLogger.success("Name updated successfully to: " + newName);
+                            if (userManager.updateUserInDatabase(currentUser.getId(), "name", oldName, newName)) { // Attempt database update
+                                SystemLogger.success("Name updated successfully to: " + newName); // Log success
                             } else {
-                                currentUser.setName(oldName);
-                                SystemLogger.error("Failed to update database. Changes reverted.");
+                                currentUser.setName(oldName); // Rollback local changes on database failure
+                                SystemLogger.error("Failed to update database. Changes reverted."); // Log database error
                             }
-                            break;
+                            break; // Exit name validation loop
                         }
                     }
                     break;
                     
+                // Phone update section - handles user phone number modification
                 case 2:
-                    System.out.println(Constants.CYAN + "\n--- Update User Phone ---" + Constants.RESET);
+                    System.out.println(Constants.CYAN + "\n--- Update User Phone ---" + Constants.RESET); // Phone update header
                     System.out.println("");
-                    while(true){
-                        System.out.print("Current Phone: +91 " + currentUser.getPhone());
+                    while(true){ // Phone validation loop
+                        System.out.print("Current Phone: +91 " + currentUser.getPhone()); // Show current phone
                         System.out.print("\nNew Phone (10-digit): +91 ");
                         String newPhone = sc.nextLine().trim();
 
-                        if (newPhone.isEmpty() || !Pattern.matches(Constants.PHONE_PATTERN, newPhone)) {
-                            SystemLogger.error("Update cancelled - Invalid phone number.");
+                        if (newPhone.isEmpty() || !Pattern.matches(Constants.PHONE_PATTERN, newPhone)) { // Validate phone format
+                            SystemLogger.error("Update cancelled - Invalid phone number."); // Log validation error
                             System.out.println("");
                         } else {
-                            String oldPhone = currentUser.getPhone();
-                            currentUser.setPhone(newPhone);
-                            if (userManager.updateUserInDatabase(currentUser.getId(), "phone", oldPhone, newPhone)) {
-                                SystemLogger.success("Phone updated successfully to: +91 " + newPhone);
+                            String oldPhone = currentUser.getPhone(); // Store old phone for potential rollback
+                            currentUser.setPhone(newPhone); // Update local user object
+                                        
+                            if (userManager.updateUserInDatabase(currentUser.getId(), "phone", oldPhone, newPhone)) { // Attempt database update
+                                SystemLogger.success("Phone updated successfully to: +91 " + newPhone); // Log success
                             } else {
-                                currentUser.setPhone(oldPhone);
-                                SystemLogger.error("Failed to update database. Changes reverted.");
+                                currentUser.setPhone(oldPhone); // Rollback local changes on database failure
+                                SystemLogger.error("Failed to update database. Changes reverted."); // Log database error
                             }
-                            break;
+                            break; // Exit phone validation loop
                         }
                     }
                     break;
                     
-                case 3:
-                    System.out.println(Constants.CYAN + "\n--- Update User Email ---" + Constants.RESET);
+                case 3: // Email update section - handles user email modification
+                    System.out.println(Constants.CYAN + "\n--- Update User Email ---" + Constants.RESET); // Email update header
                     System.out.println("");
-                    while(true){
-                        System.out.print("Current Email: " + currentUser.getEmail());
+                    while(true){ // Email validation loop
+                        System.out.print("Current Email: " + currentUser.getEmail()); // Show current email
                         System.out.print("\nNew Email (must end with @gmail.com): ");
                         String newEmail = sc.nextLine().trim();
 
-                        if (newEmail.isEmpty() || !Pattern.matches(Constants.EMAIL_PATTERN, newEmail)) {
-                            SystemLogger.error("Update cancelled - Invalid email format. Email must end with @gmail.com.");
+                        if (newEmail.isEmpty() || !Pattern.matches(Constants.EMAIL_PATTERN, newEmail)) { // Validate email format
+                            SystemLogger.error("Update cancelled - Invalid email format. Email must end with @gmail.com."); // Log validation error
                             System.out.println("");
-                        } else {
-                            String oldEmail = currentUser.getEmail();
-                            currentUser.setEmail(newEmail);
-                            if (userManager.updateUserInDatabase(currentUser.getId(), "email", oldEmail, newEmail)) {
-                                SystemLogger.success("Email updated successfully to: " + newEmail);
+                            String oldEmail = currentUser.getEmail(); // Store old email for potential rollback
+                            currentUser.setEmail(newEmail); // Update local user object
+                            if (userManager.updateUserInDatabase(currentUser.getId(), "email", oldEmail, newEmail)) { // Attempt database update
+                                SystemLogger.success("Email updated successfully to: " + newEmail); // Log success
                             } else {
-                                currentUser.setEmail(oldEmail);
-                                SystemLogger.error("Failed to update database. Changes reverted.");
+                                currentUser.setEmail(oldEmail); // Rollback local changes on database failure
+                                SystemLogger.error("Failed to update database. Changes reverted."); // Log database error
                             }
-                            break;
+                            break; // Exit email validation loop
                         }
                     }
                     break;
                     
-                case 4:
-                    System.out.println(Constants.CYAN + "\n--- Update User Location ---" + Constants.RESET);
+                case 4:  // Location update section - handles user location modification
+                    System.out.println(Constants.CYAN + "\n--- Update User Location ---" + Constants.RESET); // Location update header
                     System.out.println("");
-                    while(true){
-                        System.out.print("Current Location: " + currentUser.getLocation());
+                    while(true){ // Location validation loop
+                        System.out.print("Current Location: " + currentUser.getLocation()); // Show current location
                         System.out.print("\nNew Location (Landmark): ");
                         String newLocation = sc.nextLine().trim();
-                        if (newLocation.isEmpty() || "null".equalsIgnoreCase(newLocation)) {
-                            SystemLogger.error("Update cancelled - no input provided.");
+                        if (newLocation.isEmpty() || "null".equalsIgnoreCase(newLocation)) { // Validate location input
+                            SystemLogger.error("Update cancelled - no input provided."); // Log validation error
                             System.out.println("");
                         } else {
-                            String oldLocation = currentUser.getLocation();
-                            currentUser.setLocation(newLocation);
-                            if (userManager.updateUserInDatabase(currentUser.getId(), "location", oldLocation, newLocation)) {
-                                SystemLogger.success("Location updated successfully to: " + newLocation);
+                            String oldLocation = currentUser.getLocation(); // Store old location for potential rollback
+                            currentUser.setLocation(newLocation); // Update local user object
+                            if (userManager.updateUserInDatabase(currentUser.getId(), "location", oldLocation, newLocation)) { // Attempt database update
+                                SystemLogger.success("Location updated successfully to: " + newLocation); // Log success
                             } else {
-                                currentUser.setLocation(oldLocation);
-                                SystemLogger.error("Failed to update database. Changes reverted.");
+                                currentUser.setLocation(oldLocation); // Rollback local changes on database failure
+                                SystemLogger.error("Failed to update database. Changes reverted."); // Log database error
                             }
-                            break;
+                            break; // Exit location validation loop
                         }
                     }
                     break;
                     
-                case 5:
-                    System.out.println(Constants.CYAN + "\n--- Update User Zone ---" + Constants.RESET);
-                    System.out.println("");
-                    while(true){
-                        System.out.print("Current Zone: " + currentUser.getZone());
+                case 5: // Zone update section - handles user zone modification with coordinate regeneration
+                    System.out.println(Constants.CYAN + "\n--- Update User Zone ---" + Constants.RESET); // Zone update header
+                    System.out.println(""); 
+                    while(true){ // Zone validation loop
+                        System.out.print("Current Zone: " + currentUser.getZone()); // Show current zone
                         System.out.print("\nNew Zone (North/South/East/West): ");
-                        String newZone = sc.nextLine().trim();
+                        String newZone = sc.nextLine().trim().toLowerCase();
 
-                        if (newZone.isEmpty() || !Pattern.matches(Constants.ZONE_PATTERN, newZone)) {
-                            SystemLogger.error("Update cancelled - Invalid zone. It must be North, South, East, or West.");
+                        if (newZone.isEmpty() || !Pattern.matches(Constants.ZONE_PATTERN, newZone)) { // Validate zone format
+                            SystemLogger.error("Update cancelled - Invalid zone. It must be North, South, East, or West."); // Log validation error
                             System.out.println("");
                         } else {
                             String oldZone = currentUser.getZone();
                             double oldX = currentUser.getX();
                             double oldY = currentUser.getY();
                             
-                            currentUser.setZone(newZone);
-                            double[] coords = CoordinateGenerator.generateZoneBasedCoordinates(newZone);
+                            currentUser.setZone(newZone); // Update local user object with new zone
+                            double[] coords = CoordinateGenerator.generateZoneBasedCoordinates(newZone); // Generate new coordinates for the zone
                             currentUser.setX(coords[1]);
                             currentUser.setY(coords[0]);
                             
-                            if (userManager.updateUserInDatabase(currentUser.getId(), "zone", oldZone, newZone)) {
-                                SystemLogger.success("Zone updated from " + oldZone + " to " + newZone);
-                                SystemLogger.info("Coordinates automatically updated for new zone.");
+                            if (userManager.updateUserInDatabase(currentUser.getId(), "zone", oldZone, newZone)) { // Attempt database update
+                                SystemLogger.success("Zone updated from " + oldZone + " to " + newZone); // Log success
+                                SystemLogger.info("Coordinates automatically updated for new zone."); // Inform about coordinate update
                             } else {
                                 currentUser.setZone(oldZone);
                                 currentUser.setX(oldX);
                                 currentUser.setY(oldY);
-                                SystemLogger.error("Failed to update database. Changes reverted.");
+                                SystemLogger.error("Failed to update database. Changes reverted."); // Log database error
                             }
-                            break;
+                            break; // Exit zone validation loop
                         }
                     }
                     break;
 
-                case 6:
+                case 6: // Password update section - handles secure password change with multiple validations
                     System.out.println(Constants.CYAN + "\n--- Update User Password ---" + Constants.RESET);
                     System.out.println("");
                     
-                    while(true) {
+                    while(true) { // Password validation loop
                         System.out.print("Enter current password: ");
                         String oldPassword = sc.nextLine().trim();
                         
-                        if (oldPassword.isEmpty()) {
-                            SystemLogger.error("Current password cannot be empty.");
+                        if (oldPassword.isEmpty()) { // Validate current password is not empty
+                            SystemLogger.error("Current password cannot be empty."); // Log validation error
                             System.out.println("");
                             continue;
                         }
                         
-                        System.out.print("Enter new password (min 6 chars): ");
+                        System.out.print("Enter new password (min 6 chars): "); 
                         String newPassword = sc.nextLine().trim();
                         
-                        if (!AuthenticationHelper.isValidPassword(newPassword)) {
-                            SystemLogger.error("New password must be at least 6 characters long.");
+                        if (!AuthenticationHelper.isValidPassword(newPassword)) { // Validate new password meets requirements
+                            SystemLogger.error("New password must be at least 6 characters long."); // Log validation error
                             System.out.println("");
                             continue;
                         }
@@ -1249,64 +1243,68 @@ class Main{
                         System.out.print("Confirm new password: ");
                         String confirmPassword = sc.nextLine().trim();
                         
-                        if (!newPassword.equals(confirmPassword)) {
-                            SystemLogger.error("Passwords do not match. Please try again.");
+                        if (!newPassword.equals(confirmPassword)) { // Validate passwords match
+                            SystemLogger.error("Passwords do not match. Please try again."); // Log validation error
                             System.out.println("");
                             continue;
                         }
                         
-                        System.out.print("Are you sure you want to update your password? (y/n): ");
+                        System.out.print("Are you sure you want to update your password? (y/n): "); // Final confirmation
                         String confirmation = sc.nextLine().trim().toLowerCase();
                         
-                        if (!confirmation.equals("y") && !confirmation.equals("yes")) {
-                            SystemLogger.info("Password update cancelled.");
+                        if (!confirmation.equals("y") && !confirmation.equals("yes")) { // Validate confirmation
+                            SystemLogger.info("Password update cancelled."); // Log cancellation
                             break;
                         }
                         
-                        if (userManager.updateUserPassword(currentUser.getId(), oldPassword, newPassword)) {
-                            SystemLogger.success("Password updated successfully!");
+                        if (userManager.updateUserPassword(currentUser.getId(), oldPassword, newPassword)) { // Attempt password update
+                            SystemLogger.success("Password updated successfully!"); // Log success
                         } else {
-                            SystemLogger.error("Failed to update password. Please check your current password.");
+                            SystemLogger.error("Failed to update password. Please check your current password."); // Log failure
                         }
                         break;
                     }
                     break;
 
-                case 7:
+                case 7: // Bulk update all user details in a single operation (except password)
                     System.out.println("");
                     System.out.println(Constants.INFO + "Updating all details:" + Constants.RESET);
-                    System.out.println("Press Enter to keep current value, or enter new value to update.");
+                    System.out.println("Press Enter to keep current value, or enter new value to update."); 
 
+                     // Store original for potential rollback
                     String oldName = currentUser.getName();
                     double oldX = currentUser.getX();
                     double oldY = currentUser.getY();
                     
-                    boolean updateSuccess = true;
+                    boolean updateSuccess = true; // Track overall success of all database operations
                     
+                    // Name update section - validates and updates user name if provided
                     System.out.print("Name [" + currentUser.getName() + "]: ");
                     String allName = sc.nextLine().trim();
-                    if (!allName.isEmpty() && allName.matches("[a-zA-Z ]+")) {
+                    if (!allName.isEmpty() && allName.matches("[a-zA-Z ]+")) { 
                         currentUser.setName(allName);
-                        if (!userManager.updateUserInDatabase(currentUser.getId(), "name", oldName, allName)) {
-                            updateSuccess = false;
-                            currentUser.setName(oldName); 
+                        if (!userManager.updateUserInDatabase(currentUser.getId(), "name", oldName, allName)) { 
+                            updateSuccess = false; 
+                            currentUser.setName(oldName);
                         }
                     }
                     
+                    // Phone update section - validates and updates phone number if provided
                     System.out.print("Phone [+91 " + currentUser.getPhone() + "]: +91 ");
                     String allPhone = sc.nextLine().trim();
-                    if (!allPhone.isEmpty() && allPhone.matches(Constants.PHONE_PATTERN)) {
+                    if (!allPhone.isEmpty() && allPhone.matches(Constants.PHONE_PATTERN)) { 
                         String phoneOld = currentUser.getPhone();
-                        currentUser.setPhone(allPhone);
+                        currentUser.setPhone(allPhone); 
                         if (!userManager.updateUserInDatabase(currentUser.getId(), "phone", phoneOld, allPhone)) {
                             updateSuccess = false;
-                            currentUser.setPhone(phoneOld); 
+                            currentUser.setPhone(phoneOld);
                         }
                     }
                     
+                    // Email update section - validates and updates email if provided
                     System.out.print("Email [" + currentUser.getEmail() + "]: ");
                     String allEmail = sc.nextLine().trim();
-                    if (!allEmail.isEmpty() && Pattern.matches(Constants.EMAIL_PATTERN, allEmail)) {
+                    if (!allEmail.isEmpty() && Pattern.matches(Constants.EMAIL_PATTERN, allEmail)) { 
                         String emailOld = currentUser.getEmail();
                         currentUser.setEmail(allEmail);
                         if (!userManager.updateUserInDatabase(currentUser.getId(), "email", emailOld, allEmail)) {
@@ -1315,6 +1313,7 @@ class Main{
                         }
                     }
                     
+                    // Location update section - validates and updates location if provided
                     System.out.print("Location [" + currentUser.getLocation() + "]: ");
                     String allLocation = sc.nextLine().trim();
                     if (!allLocation.isEmpty()) {
@@ -1322,13 +1321,14 @@ class Main{
                         currentUser.setLocation(allLocation);
                         if (!userManager.updateUserInDatabase(currentUser.getId(), "location", locationOld, allLocation)) {
                             updateSuccess = false;
-                            currentUser.setLocation(locationOld); 
+                            currentUser.setLocation(locationOld);
                         }
                     }
                     
+                    // Zone update section - most complex due to coordinate management
                     System.out.print("Zone [" + currentUser.getZone() + "]: ");
                     String allZone = sc.nextLine().trim().toLowerCase();
-                    if (!allZone.isEmpty() && Pattern.matches(Constants.ZONE_PATTERN, allZone)) {
+                    if (!allZone.isEmpty() && Pattern.matches(Constants.ZONE_PATTERN, allZone)) { 
                         String zoneOld = currentUser.getZone();
                         currentUser.setZone(allZone);
                         double[] coords = CoordinateGenerator.generateZoneBasedCoordinates(allZone);
@@ -1337,21 +1337,23 @@ class Main{
                         
                         if (!userManager.updateUserInDatabase(currentUser.getId(), "zone", zoneOld, allZone)) {
                             updateSuccess = false;
-                            currentUser.setZone(zoneOld);
+                            currentUser.setZone(zoneOld); 
                             currentUser.setX(oldX);
                             currentUser.setY(oldY);
                         }
                     }
                     
+                    // Display appropriate success/error message based on overall update status
                     if (updateSuccess) {
-                        SystemLogger.success("All details updated successfully!");
+                        SystemLogger.success("All details updated successfully!"); // Success message for all updates
                     } else {
-                        SystemLogger.error("Some updates failed. Please check the logs.");
+                        SystemLogger.error("Some updates failed. Please check the logs."); // Error message for partial failures
                     }
                     
+                    // Display updated user information for confirmation
                     System.out.println("\nUpdated Information:");
                     System.out.println("─".repeat(50));
-                    System.out.println("Name: " + currentUser.getName());
+                    System.out.println("Name: " + currentUser.getName()); 
                     System.out.println("Phone: +91 " + currentUser.getPhone());
                     System.out.println("Email: " + currentUser.getEmail());
                     System.out.println("Location: " + currentUser.getLocation());
@@ -1372,15 +1374,19 @@ class Main{
         }
     }
 
+    // Handles the responder profile update process with comprehensive field validation and database persistence
     private static void handleUpdateResponderProfile() {
+        // Verify that a responder is currently logged in before proceeding with updates
         Person currentPerson = RBACManager.getCurrentUser();
         if (currentPerson == null || !(currentPerson instanceof Responder)) {
             SystemLogger.error("No responder is currently logged in.");
             return;
         }
         
+        // Cast the current person to Responder type for profile operations
         Responder currentResponder = (Responder) currentPerson;
         
+        // Display current responder information for reference before making changes
         System.out.println(Constants.CYAN + "\n--- Update Responder Details ---" + Constants.RESET);
         System.out.println("Current Responder Information:");
         System.out.println("─".repeat(50));
@@ -1392,8 +1398,10 @@ class Main{
         System.out.println("─".repeat(50));
         System.out.println();
         
+        // Main update loop - continues until user chooses to exit
         boolean validUpdate = true;
         while(validUpdate){
+            // Display menu options for different responder fields that can be updated
             System.out.println("\nSelect the field you want to update:");
             System.out.println("1. Name");
             System.out.println("2. Phone");
@@ -1404,122 +1412,145 @@ class Main{
             System.out.println("7. Update All Details (Except Password)");
             System.out.println("0. Exit");
             
+            // Get validated user choice within the allowed range (0-7)
             int updateResponder = getValidChoice(0, 7);
             
+            // Process the selected update option
             switch (updateResponder) {
-                case 1:
+                case 1: // Name update section
                     System.out.println(Constants.CYAN + "\n--- Update Responder Name ---" + Constants.RESET);
 
+                    // Name validation loop - ensures only valid alphabetic names are accepted
                     while(true){
                         System.out.println("");
                         System.out.print("Current Name: " + currentResponder.getName());
                         System.out.print("\nNew Name: ");
                         String newName = sc.nextLine().trim();
 
-                        if (newName.isEmpty() ||  "null".equalsIgnoreCase(newName)  || !newName.matches("[a-zA-Z\s]+$")) {
+                        // Validate name: non-empty, not "null", and contains only letters/spaces
+                        if (newName.isEmpty() ||  "null".equalsIgnoreCase(newName)  || !newName.matches("[a-zA-Z\\s]+$")) {
                             SystemLogger.error("Update cancelled - Invalid name. Only letters and spaces are allowed.");
                             System.out.println("");
                         } else {
+                            // Store old value for potential rollback if database update fails
                             String oldName = currentResponder.getName();
                             currentResponder.setName(newName);
 
+                            // Attempt database update and handle success/failure
                             if (responderManager.updateResponderInDatabase(currentResponder.getId(), "name", oldName, newName)) {
                                 SystemLogger.success("Name updated successfully to: " + newName);
                             } else {
+                                // Rollback local changes if database update fails
                                 currentResponder.setName(oldName);
                                 SystemLogger.error("Failed to update database. Changes reverted.");
                             }
-                            break;
+                            break; // Exit name validation loop
                         }
                     }
                     break;
 
-                case 2:
+                case 2: // Phone number update section
                     System.out.println(Constants.CYAN + "\n--- Update Responder Phone ---" + Constants.RESET);
 
+                    // Phone validation loop - ensures valid 10-digit Indian phone format
                     while(true){
                         System.out.println("");
                         System.out.print("Current Phone: +91 " + currentResponder.getPhone());
                         System.out.print("\nNew Phone (10-digit): +91 ");
                         String newPhone = sc.nextLine().trim();
+                        
+                        // Validate phone format using predefined pattern
                         if (newPhone.isEmpty() || !Pattern.matches(Constants.PHONE_PATTERN, newPhone)) {
                             SystemLogger.error("Update cancelled - Invalid phone number.");
                             System.out.println("");
                         } else {
+                            // Store old value for potential rollback
                             String oldPhone = currentResponder.getPhone();
                             currentResponder.setPhone(newPhone);
                                         
+                            // Update database and handle result
                             if (responderManager.updateResponderInDatabase(currentResponder.getId(), "phone", oldPhone, newPhone)) {
                                 SystemLogger.success("Phone updated successfully to: +91 " + newPhone);
                             } else {
+                                // Rollback on database failure
                                 currentResponder.setPhone(oldPhone);
                                 SystemLogger.error("Failed to update database. Changes reverted.");
                             }
-                            break;
+                            break; // Exit phone validation loop
                         }
                     }
                     break;
 
-                case 3:
+                case 3: // Email update section
                     System.out.println(Constants.CYAN + "\n--- Update Responder Email ---" + Constants.RESET);
 
+                    // Email validation loop - ensures valid Gmail format
                     while(true){
                         System.out.println("");
                         System.out.print("Current Email: " + currentResponder.getEmail());
                         System.out.print("\nNew Email (must end with @gmail.com): ");
                         String newEmail = sc.nextLine().trim();
+                        
+                        // Validate email format using predefined pattern
                         if (newEmail.isEmpty() || !Pattern.matches(Constants.EMAIL_PATTERN, newEmail)) {
                             SystemLogger.error("Update cancelled - Invalid email format. Email must end with @gmail.com");
                             System.out.println("");
                         } else {
+                            // Store old value for potential rollback
                             String oldEmail = currentResponder.getEmail();
                             currentResponder.setEmail(newEmail);
 
+                            // Update database and handle result
                             if (responderManager.updateResponderInDatabase(currentResponder.getId(), "email", oldEmail, newEmail)) {
                                 SystemLogger.success("Email updated successfully to: " + newEmail);
                             } else {
+                                // Rollback on database failure
                                 currentResponder.setEmail(oldEmail);
                                 SystemLogger.error("Failed to update database. Changes reverted.");
                             }
-                            break;
+                            break; // Exit email validation loop
                         }
                     }
                     break;
 
-                case 4:
+                case 4: // Zone update section - most complex due to coordinate management
                     System.out.println(Constants.CYAN + "\n--- Update Responder Zone ---" + Constants.RESET);
     
+                    // Zone validation loop - ensures valid zone selection
                     while(true){
                         System.out.println("");
                         System.out.print("Current Zone: " + currentResponder.getZone());
                         System.out.print("\nNew Zone (North/South/East/West): ");
                         String newZone = sc.nextLine().trim().toLowerCase();
                         
+                        // Validate zone format using predefined pattern
                         if (newZone.isEmpty() || !Pattern.matches(Constants.ZONE_PATTERN, newZone)) {
                             SystemLogger.error("Update cancelled - Invalid zone. It must be North, South, East, or West.");
                             System.out.println("");
                         } else {
+                            // Store old values for comprehensive rollback if needed
                             String oldZone = currentResponder.getZone();
                             double oldX = currentResponder.getX();
                             double oldY = currentResponder.getY();
                             
-                            // Remove from old zone in location manager
+                            // Remove responder from current zone in location manager before update
                             locationManager.removeResponder(currentResponder.getId());
                             
-                            // Update zone and coordinates
+                            // Update zone and generate new coordinates based on the selected zone
                             currentResponder.setZone(newZone);
                             double[] coords = CoordinateGenerator.generateZoneBasedCoordinates(newZone);
                             currentResponder.setX(coords[1]);
                             currentResponder.setY(coords[0]);
                             
-                            // Add to new zone in location manager
+                            // Add responder to new zone in location manager
                             locationManager.addResponder(currentResponder);
                             
+                            // Update database with zone change
                             if (responderManager.updateResponderInDatabase(currentResponder.getId(), "zone", oldZone, newZone)) {
                                 SystemLogger.success("Zone updated from " + oldZone + " to " + newZone);
                                 SystemLogger.info("Coordinates automatically updated for new zone.");
                             } else {
-                                // Rollback changes
+                                // Comprehensive rollback: remove from new zone, restore old values, add back to old zone
                                 locationManager.removeResponder(currentResponder.getId());
                                 currentResponder.setZone(oldZone);
                                 currentResponder.setX(oldX);
@@ -1527,48 +1558,55 @@ class Main{
                                 locationManager.addResponder(currentResponder);
                                 SystemLogger.error("Failed to update database. Changes reverted.");
                             }
-                            break;
+                            break; // Exit zone validation loop
                         }
                     }
                     break;
 
-                case 5:
+                case 5: // Availability status update section
                     System.out.println(Constants.CYAN + "\n--- Update Responder Availability ---" + Constants.RESET);
 
+                    // Availability validation loop - ensures valid boolean input
                     while(true){
                         System.out.println("");
                         System.out.print("Current Availability: " + currentResponder.isAvailable());
                         System.out.print("\nNew Availability (true/false): ");
                         String newAvailability = sc.nextLine().trim().toLowerCase();
 
+                        // Validate boolean input format
                         if (newAvailability.isEmpty() || (!newAvailability.equalsIgnoreCase("true") && !newAvailability.equalsIgnoreCase("false"))) {
                             SystemLogger.error("Update cancelled - Invalid input. Please enter true or false.");
                             System.out.println("");
                         } else {
+                            // Store old value for potential rollback
                             boolean oldAvailability = currentResponder.isAvailable();
                             boolean availability = Boolean.parseBoolean(newAvailability);
                             currentResponder.setAvailable(availability);
 
+                            // Update database with string representation of boolean
                             if (responderManager.updateResponderInDatabase(currentResponder.getId(), "availability", 
                                 String.valueOf(oldAvailability), String.valueOf(availability))) {
                                 SystemLogger.success("Availability updated from " + oldAvailability + " to " + availability);
                             } else {
+                                // Rollback on database failure
                                 currentResponder.setAvailable(oldAvailability);
                                 SystemLogger.error("Failed to update database. Changes reverted.");
                             }
-                            break;
+                            break; // Exit availability validation loop
                         }
                     }
                     break;
 
-                case 6:
+                case 6: // Password update section - includes security confirmation
                     System.out.println(Constants.CYAN + "\n--- Update Responder Password ---" + Constants.RESET);
                                 
+                    // Password update loop with multiple validation steps
                     while(true) {
                         System.out.println("");
                         System.out.print("Enter current password: ");
                         String oldPassword = sc.nextLine().trim();
                                     
+                        // Validate current password is not empty
                         if (oldPassword.isEmpty()) {
                             SystemLogger.error("Current password cannot be empty.");
                             System.out.println("");
@@ -1578,6 +1616,7 @@ class Main{
                         System.out.print("Enter new password (min 6 chars): ");
                         String newPassword = sc.nextLine().trim();
                                     
+                        // Validate new password meets minimum security requirements
                         if (!AuthenticationHelper.isValidPassword(newPassword)) {
                             SystemLogger.error("New password must be at least 6 characters long.");
                             System.out.println("");
@@ -1587,39 +1626,45 @@ class Main{
                         System.out.print("Confirm new password: ");
                         String confirmPassword = sc.nextLine().trim();
                                     
+                        // Ensure new password and confirmation match
                         if (!newPassword.equals(confirmPassword)) {
                             SystemLogger.error("Passwords do not match. Please try again.");
                             System.out.println("");
                             continue;
                         }
                                     
+                        // Final confirmation before making irreversible password change
                         System.out.print("Are you sure you want to update your password? (y/n): ");
                         String confirmation = sc.nextLine().trim().toLowerCase();
                                     
+                        // Allow user to cancel password update
                         if (!confirmation.equals("y") && !confirmation.equals("yes")) {
                             SystemLogger.info("Password update cancelled.");
                             break;
                         }
                                     
+                        // Attempt password update with specialized password method
                         if (responderManager.updateResponderPassword(currentResponder.getId(), oldPassword, newPassword)) {
                             SystemLogger.success("Password updated successfully!");
                         } else {
                             SystemLogger.error("Failed to update password. Please check your current password.");
                         }
-                        break;
+                        break; // Exit password update loop
                     }
                     break;
 
-                case 7:
-                    System.out.println(Constants.INFO + "Updating all details:" + Constants.RESET);
-                    System.out.println("Press Enter to keep current value, or enter new value to update.");
+                case 7: // Bulk update all responder details except password in a single operation
+                    System.out.println(Constants.INFO + "Updating all details:" + Constants.RESET); // Inform user about bulk update mode
+                    System.out.println("Press Enter to keep current value, or enter new value to update."); // Instructions for user input
 
+                    // Store original values for potential rollback if database updates fail
                     String oldName = currentResponder.getName();
                     double oldX = currentResponder.getX();
                     double oldY = currentResponder.getY();
 
-                    boolean updateSuccess = true;
+                    boolean updateSuccess = true; // Track overall success of all database operations
 
+                    // Name update section - validates and updates responder name if provided
                     System.out.print("Name [" + currentResponder.getName() + "]: ");
                     String allName = sc.nextLine().trim();
                     if (!allName.isEmpty() && allName.matches("[a-zA-Z ]+")) {
@@ -1631,20 +1676,22 @@ class Main{
                         }
                     }
 
+                    // Phone update section - validates and updates phone number if provided
                     System.out.print("Phone [+91 " + currentResponder.getPhone() + "]: +91 ");
-                    String allPhone = sc.nextLine().trim();
+                    String allPhone = sc.nextLine().trim(); 
                     if (!allPhone.isEmpty() && allPhone.matches(Constants.PHONE_PATTERN)) {
-                        String phoneOld = currentResponder.getPhone();
+                        String phoneOld = currentResponder.getPhone(); 
                         currentResponder.setPhone(allPhone);
                         if (!responderManager.updateResponderInDatabase(currentResponder.getId(), "phone", phoneOld, allPhone)) {
-                            updateSuccess = false;
+                            updateSuccess = false; 
                             currentResponder.setPhone(phoneOld);
                         }
                     }
 
+                    // Email update section - validates and updates email if provided
                     System.out.print("Email [" + currentResponder.getEmail() + "]: ");
                     String allEmail = sc.nextLine().trim();
-                    if (!allEmail.isEmpty() && Pattern.matches(Constants.EMAIL_PATTERN, allEmail)) {
+                    if (!allEmail.isEmpty() && Pattern.matches(Constants.EMAIL_PATTERN, allEmail)) { 
                         String emailOld= currentResponder.getEmail();
                         currentResponder.setEmail(allEmail);
                         if (!responderManager.updateResponderInDatabase(currentResponder.getId(), "email", emailOld, allEmail)) {
@@ -1653,9 +1700,10 @@ class Main{
                         }
                     }
 
+                    // Zone update section - most complex due to coordinate and location manager coordination
                     System.out.print("Zone [" + currentResponder.getZone() + "]: ");
-                    String allZone = sc.nextLine().trim().toLowerCase();
-                    if (!allZone.isEmpty() && Pattern.matches(Constants.ZONE_PATTERN, allZone)) {
+                    String allZone = sc.nextLine().trim().toLowerCase(); 
+                    if (!allZone.isEmpty() && Pattern.matches(Constants.ZONE_PATTERN, allZone)) { 
                         String zoneOld = currentResponder.getZone();
                         locationManager.removeResponder(currentResponder.getId());
 
@@ -1664,11 +1712,11 @@ class Main{
                         currentResponder.setX(coords[1]);
                         currentResponder.setY(coords[0]);
 
-                        locationManager.addResponder(currentResponder);
+                        locationManager.addResponder(currentResponder); // Add responder to new zone in location manager
 
                         if (!responderManager.updateResponderInDatabase(currentResponder.getId(), "zone", zoneOld, allZone)) {
                             updateSuccess = false;
-                            locationManager.removeResponder(currentResponder.getId());
+                            locationManager.removeResponder(currentResponder.getId()); // Remove from new zone in location manager
                             currentResponder.setZone(zoneOld);
                             currentResponder.setX(oldX);
                             currentResponder.setY(oldY);
@@ -1676,11 +1724,12 @@ class Main{
                         }
                     }
 
+                    // Availability update section - validates and updates availability status if provided
                     System.out.print("Availability [" + currentResponder.isAvailable() + "]: ");
                     String allAvailability = sc.nextLine().trim().toLowerCase();
                     if (!allAvailability.isEmpty() && (allAvailability.equals("true") || allAvailability.equals("false"))) {
                         boolean availabilityOld = currentResponder.isAvailable();
-                        boolean newAvail = Boolean.parseBoolean(allAvailability);   
+                        boolean newAvail = Boolean.parseBoolean(allAvailability); 
                         currentResponder.setAvailable(newAvail);
 
                         if (!responderManager.updateResponderInDatabase(currentResponder.getId(), "availability",String.valueOf(availabilityOld), String.valueOf(newAvail))) {
@@ -1689,6 +1738,7 @@ class Main{
                         }
                     }
 
+                    // Display appropriate success/error message based on overall update status
                     if (updateSuccess) {
                         SystemLogger.success("All details updated successfully!");
                     } else {
@@ -1717,6 +1767,7 @@ class Main{
         }
     }
 
+    // Checks if a user has any active alerts in the database (assigned or waiting status)
     private static boolean hasActiveAlertFromDB(int userId) {
         try {
             String dburl = "jdbc:mysql://localhost:3306/WomenSafetyDB";
@@ -1725,6 +1776,7 @@ class Main{
 
             Connection con = DriverManager.getConnection(dburl, dbuser, dbpass);
 
+            // SQL query to count active alerts for the user with specific statuses
             String sql = "SELECT COUNT(*) FROM alert_details WHERE User_id = ? AND Status IN (?, ?)";
             PreparedStatement pst=con.prepareStatement(sql);
 
@@ -1734,12 +1786,15 @@ class Main{
 
             ResultSet rs = pst.executeQuery();
 
+            // Check if there are results and return true if count > 0
             if (rs.next()) {
-                return rs.getInt(1) > 0;
+                return rs.getInt(1) > 0;  // Return true if at least one active alert exists
             }
         } catch (SQLException e) {
+            // Log database errors for debugging and monitoring
             SystemLogger.error("DB error while checking active alerts: " + e.getMessage());
         }
+        // Return false if no active alerts found or if an error occurred
         return false;
     }
 }
