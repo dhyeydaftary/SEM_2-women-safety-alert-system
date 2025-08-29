@@ -46,7 +46,7 @@ public class AdminManager {
                 SystemLogger.success("Admin created successfully with ID: " + adminId); // Log success
                 return admin; // Return created admin
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
             SystemLogger.error("Failed to create admin: " + e.getMessage()); // Log error
         }
         return null; // Return null if creation failed
@@ -87,7 +87,7 @@ public class AdminManager {
             rs.close();
             pst.close();
             con.close();
-        } catch (Exception e) {
+        } catch (SQLException e) {
             SystemLogger.error("Database authentication error: " + e.getMessage()); // Log error
         }
         return null; // Return null if authentication failed
@@ -136,7 +136,7 @@ public class AdminManager {
             alertPst.close();
             con.close();
             
-        } catch (Exception e) {
+        } catch (SQLException e) {
             SystemLogger.error("Error retrieving system statistics: " + e.getMessage()); // Log error
         }
     }
