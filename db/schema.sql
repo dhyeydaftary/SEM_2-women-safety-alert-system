@@ -1,12 +1,10 @@
--- Women Safety Alert System Database Schema
--- This schema defines the database structure for the Women Safety Alert System
+-- Safety Alert System Database Schema
+-- This schema defines the database structure for the Safety Alert System
 -- Database: WomenSafetyDB
--- Author: BLACKBOXAI
+-- Author: Dhyey Daftary
 -- Date: 2024
 
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-START TRANSACTION;
-SET time_zone = "+00:00";
+
 
 -- =====================
 -- User Details Table
@@ -120,4 +118,3 @@ CREATE TABLE responder_update_logs (
     FOREIGN KEY (Responder_id) REFERENCES responder_details(Responder_id) ON UPDATE CASCADE
 );
 
-COMMIT;
