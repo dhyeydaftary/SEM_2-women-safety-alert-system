@@ -75,8 +75,8 @@ CREATE DATABASE WomenSafetyDB;
 USE WomenSafetyDB;
 
 -- The application will automatically create all required tables including:
--- user_details, responder_details, alert_details, dispatches, 
--- alert_status_history, and comprehensive audit tables
+-- user_details, responder_details, admin_details, alert_details,
+-- alert_status_history, dispatches, user_update_logs, responder_update_logs
 ```
 
 ### 3. Configure Database Connection
@@ -101,6 +101,8 @@ java -cp out com.womensafety.alertsystem.main.Main
 
 ```
 Women-Safety-Alert-System/
+├── db/                                             # Database files
+│   └── schema.sql                                  # Database schema with all table definitions                      
 ├── src/
 │   └── com/
 │       └── womensafety/
