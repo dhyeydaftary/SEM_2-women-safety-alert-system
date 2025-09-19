@@ -191,7 +191,7 @@ Women-Safety-Alert-System/
 
 ## Author
 
-**Dhyey Daftary**  
+***Dhyey Daftary***  
 LinkedIn: [https://www.linkedin.com/in/dhyey-daftary/](https://www.linkedin.com/in/dhyey-daftary/)
 
 ## License
