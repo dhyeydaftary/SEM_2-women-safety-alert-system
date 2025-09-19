@@ -188,7 +188,7 @@ Women-Safety-Alert-System/
 ## Author
 
 **Dhyey Daftary**  
-GitHub: [https://www.linkedin.com/in/dhyey-daftary/](https://www.linkedin.com/in/dhyey-daftary/)
+LinkedIn: [https://www.linkedin.com/in/dhyey-daftary/](https://www.linkedin.com/in/dhyey-daftary/)
 
 ## License
 
