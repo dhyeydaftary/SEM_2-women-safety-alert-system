@@ -206,4 +206,4 @@ This project is developed for **educational purposes** as part of academic cours
 - Comprehensive logging, error handling, and system monitoring
 - Real-time system design, coordination, and emergency response management
 
-For any questions, suggestions, or contributions, please contact the author through GitHub.
+For any questions, suggestions, or contributions, please contact the author through LinkedIn.
