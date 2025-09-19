@@ -2,6 +2,10 @@
 
 A comprehensive Java-based backend system designed to enhance women's safety through real-time alert dispatching, role-based access control, and efficient emergency response coordination.
 
+##  Personal Note
+
+This was developed as my Java project in ***Semester-2***.
+
 ## Features
 
 ### User Module
