@@ -103,7 +103,7 @@ java -cp out com.womensafety.alertsystem.main.Main
 Women-Safety-Alert-System/
 ├── db/                                             # Database files
 │   └── schema.sql                                  # Database schema with all table definitions                      
-├── src/
+├── src/                                            # Java source code
 │   └── com/
 │       └── womensafety/
 │           └── alertsystem/
@@ -138,6 +138,7 @@ Women-Safety-Alert-System/
 │                   ├── EscalationLogger.java       # Alert escalation logging and monitoring
 │                   └── CoordinateGenerator.java    # Coordinate generation and management
 ├── out/                                            # Compiled Java classes
+├── docs/                                           # ER diagram, Flowcharts etc.                                         
 └── README.md                                       # Project documentation
 ```
 
